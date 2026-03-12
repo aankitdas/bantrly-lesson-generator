@@ -1,0 +1,297 @@
+{
+  "bantrly_example_lessons": {
+    "version": "1.0",
+    "generated_by": "Bantrly Lesson Generator — Design Prototype",
+    "ccss_source": "Common Core State Standards Initiative (corestandards.org)",
+    "notes": "5 lessons demonstrating range across all grade bands, ELA domains, lesson types, and themes.",
+    "lessons": [
+
+      {
+        "lesson_id": "L-K2-SPK-001",
+        "metadata": {
+          "grade_band": "K-2",
+          "ela_domain": "Speaking",
+          "lesson_type": "Story Retell",
+          "theme": "Nature & Animals",
+          "primary_skill": "Retell the key events of a short story in sequence using beginning, middle, and end",
+          "voice_markers": ["Speaking Rate", "Fluency & Fillers"],
+          "estimated_duration_minutes": 6,
+          "ccss_anchor": "CCSS.ELA-Literacy.SL.K.4 — Describe familiar people, places, things, and events and, with prompting and support, provide additional detail.",
+          "design_notes": "Single new skill only. Fantasy animal setting keeps cognitive load low. Sequence words (first, then, finally) are the scaffold — they reduce extraneous load while building germane load (Sweller, 1988)."
+        },
+        "lesson_flow": {
+          "hook": {
+            "duration_seconds": 70,
+            "content": "Deep in a forest where the trees whisper secrets, a small turtle named Pip found something she had never seen before: a shiny, golden acorn. But when she picked it up — whoosh! — the wind blew it right out of her hands. Now Pip has to find it before nightfall. Are you ready to hear what happens?"
+          },
+          "model": {
+            "duration_seconds": 80,
+            "content": "Listen to how I retell the story using three special words: First... Then... Finally... 'First, Pip found a golden acorn in the forest. Then, the wind blew it away and she ran after it. Finally, she found it sitting on top of a mossy rock near the river.' Do you hear how those three words help the listener follow along? That's what we're practicing today.",
+            "skill_named_explicitly": "Today we are practicing: retelling a story in order, using the words first, then, and finally."
+          },
+          "practice": {
+            "prompts": [
+              {
+                "prompt_id": "P1",
+                "type": "supported",
+                "text": "Now it's your turn! Tell me what happened at the beginning of Pip's story.",
+                "scaffold": "Start with: 'First, Pip...'"
+              },
+              {
+                "prompt_id": "P2",
+                "type": "supported",
+                "text": "What happened in the middle of the story?",
+                "scaffold": "Start with: 'Then, the wind...'"
+              },
+              {
+                "prompt_id": "P3",
+                "type": "independent",
+                "text": "Now tell me the whole story — beginning, middle, and end — all by yourself! Use first, then, and finally.",
+                "scaffold": null
+              }
+            ]
+          },
+          "reflect": {
+            "duration_seconds": 45,
+            "feedback_anchors": {
+              "voice_marker_focus": "Speaking Rate",
+              "positive_signal": "A strong retell sounds steady and clear — not too fast, not too slow, so the listener can follow each part of the story.",
+              "growth_signal": "Try it again and pause slightly after each sequence word: 'First... [pause] ...Then... [pause] ...Finally.' Those small pauses help your listener keep up."
+            }
+          }
+        },
+        "guardrail_flags": {
+          "cognitive_load_check": "pass — one new skill, familiar animal/fantasy setting, format scaffolded with sentence starters",
+          "vocabulary_ceiling_check": "pass — all prompts under 30 words, sequence words are grade-appropriate",
+          "cultural_bias_check": "pass — forest/animal setting is culturally neutral",
+          "single_skill_check": "pass — one skill: sequential story retell"
+        }
+      },
+
+      {
+        "lesson_id": "L-35-LST-002",
+        "metadata": {
+          "grade_band": "3-5",
+          "ela_domain": "Listening",
+          "lesson_type": "Listen & Judge",
+          "theme": "Community & Belonging",
+          "primary_skill": "Identify whether a speaker's key points are clearly supported with reasons or details",
+          "voice_markers": ["Task Adherence", "Fluency & Fillers"],
+          "estimated_duration_minutes": 7,
+          "ccss_anchor": "CCSS.ELA-Literacy.SL.4.3 — Identify the reasons and evidence a speaker provides to support particular points.",
+          "design_notes": "Listening domain leads; speaking is the response mode. Community theme is inclusive and familiar. Sentence starters provided to reduce extraneous load on the speaking output while keeping intrinsic load (evaluating a speech) appropriately challenging for grades 3-5."
+        },
+        "lesson_flow": {
+          "hook": {
+            "duration_seconds": 65,
+            "content": "Imagine your school is deciding whether to add a community garden or a new basketball court to the empty lot next to the building. Two students — Maya and Diego — each gave a short speech to the class to share their opinion. You're going to listen to one of their speeches and then decide: did they make a strong case? Did they give you reasons — or just their feelings?"
+          },
+          "model": {
+            "duration_seconds": 90,
+            "content": "Here is Maya's speech: 'I think we should build a garden. Gardens are nice and they look pretty. I like plants. It would be fun. We should definitely do it.' Now — did Maya give you reasons, or just feelings? She told us she likes it and it's fun, but she didn't explain *why* a garden would help the school. That's the difference between an opinion and a supported point. A supported point gives a reason: 'A garden would help because...' Watch for that word: *because*.",
+            "skill_named_explicitly": "Today we are practicing: listening for whether a speaker backs up their points with reasons or evidence — not just feelings."
+          },
+          "practice": {
+            "prompts": [
+              {
+                "prompt_id": "P1",
+                "type": "supported",
+                "text": "Now listen to Diego's speech: 'I think we should build a basketball court. Our school has 300 students but only one small court. Kids have to wait a long time to play at recess. Exercise helps us focus in class, and more students would use a court than a garden because sports are already popular here.' Did Diego give reasons, or just feelings? What evidence did he use?",
+                "scaffold": "Start with: 'I think Diego [did / did not] support his point because...'"
+              },
+              {
+                "prompt_id": "P2",
+                "type": "independent",
+                "text": "Compare the two speeches. Whose argument was stronger — Maya's or Diego's? Explain your thinking using at least one specific detail from what you heard.",
+                "scaffold": null
+              }
+            ]
+          },
+          "reflect": {
+            "duration_seconds": 50,
+            "feedback_anchors": {
+              "voice_marker_focus": "Task Adherence",
+              "positive_signal": "A strong evaluation response stays on topic — it refers back to what the speaker actually said, not just a general opinion.",
+              "growth_signal": "Try to name the specific reason or detail from the speech that convinced you. Saying 'he mentioned 300 students' is much stronger than 'he had good facts.'"
+            }
+          }
+        },
+        "guardrail_flags": {
+          "cognitive_load_check": "pass — theme is familiar, skill is single and clearly named, format is scaffolded for P1",
+          "vocabulary_ceiling_check": "pass — Diego's speech uses grade-appropriate vocabulary, no idioms",
+          "cultural_bias_check": "pass — diverse names (Maya, Diego), community setting is broadly relatable",
+          "single_skill_check": "pass — one skill: identifying supported vs. unsupported claims"
+        }
+      },
+
+      {
+        "lesson_id": "L-68-SPK-003",
+        "metadata": {
+          "grade_band": "6-8",
+          "ela_domain": "Speaking",
+          "lesson_type": "Debate Drop",
+          "theme": "Ethics & Dilemmas",
+          "primary_skill": "Present a claim with at least two pieces of supporting evidence and acknowledge a counterargument",
+          "voice_markers": ["Prosody", "Task Adherence"],
+          "estimated_duration_minutes": 8,
+          "ccss_anchor": "CCSS.ELA-Literacy.SL.6.4 — Present claims and findings, sequencing ideas logically and using pertinent descriptions, facts, and details to accentuate main ideas; use appropriate volume and clear pronunciation.",
+          "design_notes": "Moral dilemma format activates genuine motivation to speak (Bruner, 1990 — narrative mode). Both sides are provided to reduce bias risk. Counterargument requirement raises intrinsic load appropriately for 6-8. No sentence starters — this grade band can handle independent production."
+        },
+        "lesson_flow": {
+          "hook": {
+            "duration_seconds": 75,
+            "content": "A city school has just announced a new rule: all students must wear uniforms starting next year. Some students are furious. Others are relieved. The school board is holding a public comment session — and they've asked for student voices. This is your chance. Which side are you on? And more importantly — can you make the board actually listen?"
+          },
+          "model": {
+            "duration_seconds": 100,
+            "content": "Here's what a weak response sounds like: 'I think uniforms are bad because I don't like them and they're boring.' Here's what a strong response sounds like: 'I oppose the uniform policy for two reasons. First, research shows that self-expression through clothing supports adolescent identity development. Second, uniforms place an added financial burden on lower-income families who must buy new clothes. I understand that the school wants to reduce distractions — but there are less costly ways to do that, like a dress code instead of a full uniform.' Notice the structure: claim → two reasons → counterargument acknowledged. That's what we're building today.",
+            "skill_named_explicitly": "Today we are practicing: making a claim, supporting it with two pieces of evidence, and acknowledging the other side."
+          },
+          "practice": {
+            "prompts": [
+              {
+                "prompt_id": "P1",
+                "type": "supported",
+                "text": "Take 30 seconds to decide: are you for or against school uniforms? Jot down two reasons mentally. Then speak your position to the school board. Remember: claim → two reasons → one counterargument.",
+                "scaffold": "Optional structure: 'I [support/oppose] this policy because... First... Second... I understand some people believe... however...'"
+              },
+              {
+                "prompt_id": "P2",
+                "type": "independent",
+                "text": "Now switch sides. If you argued against uniforms, now argue for them — and vice versa. Use the same structure. This is harder, but stronger speakers can argue any position with evidence.",
+                "scaffold": null
+              }
+            ]
+          },
+          "reflect": {
+            "duration_seconds": 55,
+            "feedback_anchors": {
+              "voice_marker_focus": "Prosody",
+              "positive_signal": "Persuasive speaking uses stress and emphasis to signal importance — slowing down on key claims, rising slightly at the end of a reason. A flat, monotone delivery makes even strong arguments feel weak.",
+              "growth_signal": "Listen back to your recording. Where did you speed up? Those moments are usually where your argument was least clear. Try emphasizing your two key reasons with a deliberate pause before each one."
+            }
+          }
+        },
+        "guardrail_flags": {
+          "cognitive_load_check": "pass — all three dimensions (theme, skill, format) are new but chunked clearly; model provides worked example (Sweller, 1994)",
+          "vocabulary_ceiling_check": "pass — vocabulary is grade-appropriate; no unexplained jargon",
+          "cultural_bias_check": "pass — uniform debate is globally relevant; no culturally specific assumptions; both sides represented equally",
+          "single_skill_check": "pass — one skill: claim + two supports + counterargument"
+        }
+      },
+
+      {
+        "lesson_id": "L-912-RDG-SPK-004",
+        "metadata": {
+          "grade_band": "9-12",
+          "ela_domain": "Reading → Speaking",
+          "lesson_type": "Text Explorer",
+          "theme": "History & Change",
+          "primary_skill": "Analyze an author's rhetorical choices and explain how they strengthen or weaken the argument",
+          "voice_markers": ["Task Adherence", "Prosody", "Fluency & Fillers"],
+          "estimated_duration_minutes": 8,
+          "ccss_anchor": "CCSS.ELA-Literacy.SL.11-12.1.c — Propel conversations by posing and responding to questions that probe reasoning and evidence; clarify, verify, or challenge ideas and conclusions.",
+          "design_notes": "Cross-domain lesson: reading analysis feeds spoken output. Historical text reduces cultural bias risk vs. contemporary politics. Three voice markers evaluated simultaneously — appropriate for 9-12 where full complexity is supported. No scaffolds — independent production expected at this band."
+        },
+        "lesson_flow": {
+          "hook": {
+            "duration_seconds": 70,
+            "content": "In 1963, a 34-year-old Baptist minister stood at the Lincoln Memorial in front of 250,000 people and delivered a speech that changed the course of American history. But he almost didn't say the most famous part. Halfway through his prepared remarks, gospel singer Mahalia Jackson shouted from behind him: 'Tell them about the dream, Martin!' And he set his notes aside. What makes a speech so powerful that people remember it 60 years later? Today you're going to find out — by taking it apart."
+          },
+          "model": {
+            "duration_seconds": 105,
+            "content": "Here is an excerpt: 'I have a dream that my four little children will one day live in a nation where they will not be judged by the color of their skin but by the content of their character.' A weak analysis says: 'This is emotional and inspiring.' A strong analysis says: 'King uses personal anaphora — the repeated phrase I have a dream — to create a rhythmic, cumulative effect that builds emotional momentum. By invoking his own children, he shifts from abstract political argument to intimate personal stakes, making the audience feel the injustice rather than simply understand it.' Notice the difference: one describes the effect, the other explains the *mechanism* that produces the effect.",
+            "skill_named_explicitly": "Today we are practicing: identifying a specific rhetorical choice, naming it, and explaining precisely how it affects the reader or listener."
+          },
+          "practice": {
+            "prompts": [
+              {
+                "prompt_id": "P1",
+                "type": "independent",
+                "text": "Read this passage aloud to yourself first, then analyze it: 'We cannot walk alone. And as we walk, we must make the pledge that we shall always march ahead. We cannot turn back.' Identify one rhetorical choice King makes in these three sentences. Name it, quote the specific words, and explain how it strengthens his argument. Speak your analysis aloud as if presenting to a literature class.",
+                "scaffold": null
+              },
+              {
+                "prompt_id": "P2",
+                "type": "independent",
+                "text": "Now push further: is there anything in these lines that could be seen as a weakness in his argument — a claim that isn't fully supported, or an assumption he makes about the audience? Speak a 3-4 sentence critical response.",
+                "scaffold": null
+              }
+            ]
+          },
+          "reflect": {
+            "duration_seconds": 60,
+            "feedback_anchors": {
+              "voice_marker_focus": "Task Adherence",
+              "positive_signal": "A high-quality analytical response stays tethered to the text — every claim references specific words or phrases. If you quoted the text at least once and named a technique, you're on the right track.",
+              "growth_signal": "The most common gap at this level is explaining *what* a technique does without explaining *why it works on this particular audience*. Try adding: '...and this works because the audience in 1963 would have felt...' Context transforms analysis into insight."
+            }
+          }
+        },
+        "guardrail_flags": {
+          "cognitive_load_check": "pass — complexity is appropriate for 9-12; worked example provided in model stage; content is chunked into two distinct prompts",
+          "vocabulary_ceiling_check": "pass — rhetorical vocabulary (anaphora, mechanism, cumulative) is expected at this band",
+          "cultural_bias_check": "flag — historical US context; for non-US students, brief context note on Civil Rights Movement recommended before lesson delivery",
+          "single_skill_check": "pass — one skill: rhetorical analysis (mechanism, not just effect)"
+        }
+      },
+
+      {
+        "lesson_id": "L-35-SPK-005",
+        "metadata": {
+          "grade_band": "3-5",
+          "ela_domain": "Speaking",
+          "lesson_type": "Mission Brief",
+          "theme": "Adventure & Discovery",
+          "primary_skill": "Explain a process clearly using step-by-step sequence and relevant details",
+          "voice_markers": ["Fluency & Fillers", "Speaking Rate"],
+          "estimated_duration_minutes": 7,
+          "ccss_anchor": "CCSS.ELA-Literacy.SL.4.4 — Report on a topic or text, tell a story, or recount an experience in an organized manner, using appropriate facts and relevant, descriptive details, speaking clearly at an understandable pace.",
+          "design_notes": "Mission Brief format embeds speaking task within a narrative role — student becomes the expert, lowering the affective barrier to speaking (Bruner, 1990). Adventure/discovery theme is age-appropriate and culturally inclusive. Two sentence starters for P1 only; P2 is independent to push toward transfer."
+        },
+        "lesson_flow": {
+          "hook": {
+            "duration_seconds": 65,
+            "content": "INCOMING TRANSMISSION. Agent, are you there? This is Mission Control. Our deep-sea exploration submarine just discovered something extraordinary: a creature living 3,000 meters below the ocean surface that generates its own light. We need you to brief the rest of the crew before the next dive. You have the data. The team is counting on you. Mission begins in 3... 2... 1..."
+          },
+          "model": {
+            "duration_seconds": 85,
+            "content": "Here is what a clear process explanation sounds like: 'The anglerfish makes its own light through a process called bioluminescence. Here's how it works: First, bacteria that produce light live inside a special organ on the fish's head called the esca. Next, the fish uses muscles to control how much light escapes — almost like a dimmer switch. Finally, the glowing light attracts smaller fish, which the anglerfish then catches for food.' Notice: each step connects to the next, and details explain *why*, not just *what*.",
+            "skill_named_explicitly": "Today we are practicing: explaining a process step-by-step, with details that tell the listener *why* each step matters."
+          },
+          "practice": {
+            "prompts": [
+              {
+                "prompt_id": "P1",
+                "type": "supported",
+                "text": "Your turn, Agent. Brief the crew on how the deep-sea anglerfish uses bioluminescence to survive. Explain it in at least 3 steps. Imagine you're talking to crew members who have never heard of this creature.",
+                "scaffold": "Start with: 'The anglerfish survives in the deep sea by...' or 'Here is how bioluminescence works: First...'"
+              },
+              {
+                "prompt_id": "P2",
+                "type": "independent",
+                "text": "New mission data just arrived. The crew wants to know: why is the deep sea completely dark, and how do creatures survive without sunlight? Use what you know — or your best scientific thinking — and brief the team in 4-5 sentences.",
+                "scaffold": null
+              }
+            ]
+          },
+          "reflect": {
+            "duration_seconds": 50,
+            "feedback_anchors": {
+              "voice_marker_focus": "Speaking Rate",
+              "positive_signal": "A great mission brief is clear and steady — not rushed. When you're explaining steps, each one deserves its own moment so the listener can follow.",
+              "growth_signal": "If you found yourself speeding up or saying 'um' between steps, that's a signal to pause intentionally. Try placing a brief pause after each step number: 'First... [pause] the bacteria produce light.' That pause is a tool, not a mistake."
+            }
+          }
+        },
+        "guardrail_flags": {
+          "cognitive_load_check": "pass — narrative role (Mission Agent) provides familiar structure; science content is the only new element; scaffold provided for P1",
+          "vocabulary_ceiling_check": "pass — bioluminescence and esca are new vocabulary but are explained inline; all prompts under 60 words",
+          "cultural_bias_check": "pass — ocean/science theme is globally relevant and culturally neutral",
+          "single_skill_check": "pass — one skill: step-by-step process explanation with reasoning"
+        }
+      }
+
+    ]
+  }
+}
