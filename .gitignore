@@ -13,8 +13,10 @@ wheels/
 .env
 
 # Folder for generated lessons
-data/generated/
-data/registry/
+data/generated/*
+!data/generated/.gitkeep
+data/registry/*
+!data/registry/.gitkeep
 
 # Test files
 test_*.py
