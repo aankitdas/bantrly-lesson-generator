@@ -5,6 +5,8 @@ import sys
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
+
 
 # Ensure src/ is importable
 sys.path.insert(0, os.path.dirname(__file__))
@@ -33,13 +35,11 @@ def preview_skill(grade_band, ela_domain):
 DOMAINS = ["Speaking", "Listening", "Reading", "Writing"]
 
 def build_coverage_heatmap():
-    """Build a coverage heatmap across all grade bands and domains."""
+    """Build a clean, styled coverage heatmap."""
     data = []
     for band in GRADE_BANDS:
         row = []
         for domain in DOMAINS:
-            # get_coverage_report already handles Reading → Speaking
-            # by counting those lessons toward both Reading and Speaking
             report = get_coverage_report(band, domain)
             pct = report["covered_count"] / report["total"] if report["total"] > 0 else 0
             row.append(pct)
@@ -47,27 +47,60 @@ def build_coverage_heatmap():
 
     data_np = np.array(data)
 
-    fig, ax = plt.subplots(figsize=(8, 4))
-    cmap = plt.cm.RdYlGn
+    fig, ax = plt.subplots(figsize=(9, 4))
+    fig.patch.set_facecolor("#0f1117")
+    ax.set_facecolor("#0f1117")
+
+    # Custom colormap — dark red → amber → green
+    colors = ["#3d0000", "#8b1a1a", "#e05c00", "#f0a500", "#2ecc71"]
+    from matplotlib.colors import LinearSegmentedColormap
+    cmap = LinearSegmentedColormap.from_list("bantrly", colors, N=256)
+
     im = ax.imshow(data_np, cmap=cmap, vmin=0, vmax=1, aspect="auto")
 
-    ax.set_xticks(range(len(DOMAINS)))
-    ax.set_xticklabels(DOMAINS, fontsize=11)
-    ax.set_yticks(range(len(GRADE_BANDS)))
-    ax.set_yticklabels(GRADE_BANDS, fontsize=11)
-
+    # Cell annotations
     for i in range(len(GRADE_BANDS)):
         for j in range(len(DOMAINS)):
             pct = data_np[i, j]
             label = f"{int(pct * 100)}%"
-            color = "black" if pct < 0.7 else "white"
+            color = "white" if pct < 0.6 else "#0f1117"
             ax.text(j, i, label, ha="center", va="center",
-                    fontsize=12, fontweight="bold", color=color)
+                    fontsize=13, fontweight="bold", color=color)
 
-    ax.set_title("Skill Coverage Heatmap", fontsize=13, fontweight="bold", pad=12)
-    plt.colorbar(im, ax=ax, label="Coverage %")
+    # Axis labels
+    ax.set_xticks(range(len(DOMAINS)))
+    ax.set_xticklabels(DOMAINS, fontsize=11, color="white", fontweight="bold")
+    ax.set_yticks(range(len(GRADE_BANDS)))
+    ax.set_yticklabels(GRADE_BANDS, fontsize=11, color="white", fontweight="bold")
+
+    # Move x labels to top
+    ax.xaxis.set_label_position("top")
+    ax.xaxis.tick_top()
+
+    # Remove spines
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    # Grid lines between cells
+    ax.set_xticks(np.arange(len(DOMAINS)) - 0.5, minor=True)
+    ax.set_yticks(np.arange(len(GRADE_BANDS)) - 0.5, minor=True)
+    ax.grid(which="minor", color="#0f1117", linewidth=3)
+    ax.tick_params(which="minor", bottom=False, left=False)
+    ax.tick_params(which="major", bottom=False, left=False)
+
+    # Colorbar
+    cbar = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
+    cbar.ax.yaxis.set_tick_params(color="white", labelsize=9)
+    cbar.outline.set_edgecolor("#0f1117")
+    plt.setp(cbar.ax.yaxis.get_ticklabels(), color="white")
+    cbar.set_ticks([0, 0.25, 0.5, 0.75, 1.0])
+    cbar.set_ticklabels(["0%", "25%", "50%", "75%", "100%"])
+
+    # Title
+    ax.set_title("Skill Coverage", fontsize=14, fontweight="bold",
+                 color="white", pad=16)
+
     plt.tight_layout()
-
     return fig
 
 
@@ -141,6 +174,7 @@ def build_taxonomy_browser(grade_band_sel):
         covered_set = set(s.lower() for s in report["covered"])
 
         lines.append(f"### {domain} — {report['covered_count']}/{report['total']} covered")
+        lines.append("")
         for skill in report["covered"] + report["remaining"]:
             icon = "✅" if skill.lower() in covered_set else "⬜"
             lines.append(f"{icon} {skill}")
@@ -153,6 +187,7 @@ def build_taxonomy_browser(grade_band_sel):
     covered_set = set(s.lower() for s in rds_report["covered"])
 
     lines.append(f"### Reading → Speaking (interleaved) — {rds_report['covered_count']}/{rds_report['total']} covered")
+    lines.append("")
     for skill in interleaved:
         icon = "✅" if skill.lower() in covered_set else "⬜"
         lines.append(f"{icon} {skill}")
@@ -197,16 +232,17 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
             build_guardrail_display(lesson),
             preview_skill(m["grade_band"], m["ela_domain"]),
             build_taxonomy_browser(m["grade_band"]),
+            build_skill_breakdown(m["grade_band"], m["ela_domain"]),
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -439,6 +475,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             guardrail_output,
             skill_preview,
             taxonomy_output,
+            skill_breakdown_output,
         ],
         )
 
@@ -455,6 +492,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             guardrail_output,
             skill_preview,
             taxonomy_output,
+            skill_breakdown_output,
         ],
     )
 
