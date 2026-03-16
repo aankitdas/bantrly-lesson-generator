@@ -140,6 +140,10 @@ def get_covered_skills(grade_band: str, ela_domain: str) -> list[str]:
         if ela_domain == "Reading → Speaking":
             if entry_domain in ("reading → speaking", "reading", "speaking"):
                 covered.append(entry["skill"])
+        elif ela_domain in ("Reading", "Speaking"):
+            # Also count Reading → Speaking lessons toward Reading and Speaking
+            if entry_domain == domain_key or entry_domain == "reading → speaking":
+                covered.append(entry["skill"])
         else:
             if entry_domain == domain_key:
                 covered.append(entry["skill"])

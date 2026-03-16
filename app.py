@@ -38,6 +38,8 @@ def build_coverage_heatmap():
     for band in GRADE_BANDS:
         row = []
         for domain in DOMAINS:
+            # get_coverage_report already handles Reading → Speaking
+            # by counting those lessons toward both Reading and Speaking
             report = get_coverage_report(band, domain)
             pct = report["covered_count"] / report["total"] if report["total"] > 0 else 0
             row.append(pct)
@@ -389,6 +391,20 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                 guardrail_output,
             ],
         )
+
+        theme.submit(
+        fn=generate_lesson,
+        inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+        outputs=[
+            lesson_output,
+            raw_json_output,
+            history_state,
+            history_table,
+            lessons_state,
+            heatmap_plot,
+            guardrail_output,
+        ],
+    )
 
         breakdown_grade.change(
             fn=build_skill_breakdown,
