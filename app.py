@@ -304,59 +304,59 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
             skill_breakdown_output = gr.Markdown(value="")
 
-    # =========================================================================
-    # EVENT HANDLERS
-    # =========================================================================
+        # =========================================================================
+        # EVENT HANDLERS
+        # =========================================================================
 
-    grade_band.change(
-        fn=preview_skill,
-        inputs=[grade_band, ela_domain],
-        outputs=skill_preview,
-    )
-    ela_domain.change(
-        fn=preview_skill,
-        inputs=[grade_band, ela_domain],
-        outputs=skill_preview,
-    )
+        grade_band.change(
+            fn=preview_skill,
+            inputs=[grade_band, ela_domain],
+            outputs=skill_preview,
+        )
+        ela_domain.change(
+            fn=preview_skill,
+            inputs=[grade_band, ela_domain],
+            outputs=skill_preview,
+        )
 
-    generate_btn.click(
-        fn=generate_lesson,
-        inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
-        outputs=[
-            lesson_output,
-            raw_json_output,
-            history_state,
-            history_table,
-            lessons_state,
-            heatmap_plot,
-        ],
-    )
+        generate_btn.click(
+            fn=generate_lesson,
+            inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+            outputs=[
+                lesson_output,
+                raw_json_output,
+                history_state,
+                history_table,
+                lessons_state,
+                heatmap_plot,
+            ],
+        )
 
-    breakdown_grade.change(
-        fn=build_skill_breakdown,
-        inputs=[breakdown_grade, breakdown_domain],
-        outputs=skill_breakdown_output,
-    )
-    breakdown_domain.change(
-        fn=build_skill_breakdown,
-        inputs=[breakdown_grade, breakdown_domain],
-        outputs=skill_breakdown_output,
-    )
+        breakdown_grade.change(
+            fn=build_skill_breakdown,
+            inputs=[breakdown_grade, breakdown_domain],
+            outputs=skill_breakdown_output,
+        )
+        breakdown_domain.change(
+            fn=build_skill_breakdown,
+            inputs=[breakdown_grade, breakdown_domain],
+            outputs=skill_breakdown_output,
+        )
 
-    history_table.select(
-        fn=select_lesson_json,
-        inputs=[lessons_state],
-        outputs=raw_json_output,
-    )
+        history_table.select(
+            fn=select_lesson_json,
+            inputs=[lessons_state],
+            outputs=raw_json_output,
+        )
 
-    demo.load(
-        fn=build_coverage_heatmap,
-        outputs=heatmap_plot,
-    )
-    demo.load(
-        fn=build_skill_breakdown,
-        inputs=[breakdown_grade, breakdown_domain],
-        outputs=skill_breakdown_output,
-    )
+        demo.load(
+            fn=build_coverage_heatmap,
+            outputs=heatmap_plot,
+        )
+        demo.load(
+            fn=build_skill_breakdown,
+            inputs=[breakdown_grade, breakdown_domain],
+            outputs=skill_breakdown_output,
+        )
 
 demo.launch()
