@@ -32,7 +32,7 @@ import time
 from dotenv import load_dotenv
 from groq import Groq
 
-from src.guardrails.checks import run_pre_checks, check_deduplication
+from src.guardrails.checks import run_pre_checks, check_deduplication, check_cultural_bias
 from src.prompts.templates import build_full_prompt, inspect_prompt
 from src.utils.validator    import validate_llm_output, ValidationError
 from src.utils.file_handler import save_lesson, register_combo, DATA_GENERATED
@@ -55,7 +55,7 @@ MAX_TOKENS   = 4096   # Enough for a complete lesson JSON
 TEMPERATURE  = 0.7    # Balance between creativity and consistency
 MAX_RETRIES  = 3      # How many times to retry on validation failure
 RETRY_DELAY  = 2      # Seconds to wait between retries
-
+MAX_BIAS_RETRIES    = 5   # retries for cultural bias failures
 
 # =============================================================================
 # LESSON GENERATOR
@@ -182,7 +182,12 @@ class LessonGenerator:
         # STEP 4: Build the prompt
         # ------------------------------------------------------------------
         self._log("\n[generator] Step 4 — Building prompt...")
-        messages = build_full_prompt(grade_band, ela_domain, theme, skill)
+        bias_warning = None
+        messages     = build_full_prompt(grade_band, ela_domain, theme, skill, bias_warning)
+
+        if self.verbose:
+            total_chars = sum(len(m["content"]) for m in messages)
+            self._log(f"[generator] Prompt built — {total_chars:,} chars (~{total_chars//4:,} tokens)")
 
         # ------------------------------------------------------------------
         # STEP 5 + 6: Call Groq API + Validate output

@@ -190,20 +190,28 @@ OUTPUT FORMAT
 # USER PROMPT BUILDER
 # =============================================================================
 
-def build_user_prompt(grade_band: str, ela_domain: str, theme: str, skill: str) -> str:
+def build_user_prompt(
+    grade_band  : str,
+    ela_domain  : str,
+    theme       : str,
+    skill       : str,
+    bias_warning: list = None,
+) -> str:
     """
     Build the user-turn prompt for a lesson generation request.
 
     Args:
-        grade_band: One of "K-2", "3-5", "6-8", "9-12"
-        ela_domain: One of the valid ELA domains
-        theme:      The lesson theme e.g. "Climate Change"
-        skill:      The exact skill from the taxonomy to target
+        grade_band  : One of "K-2", "3-5", "6-8", "9-12"
+        ela_domain  : One of the valid ELA domains
+        theme       : The lesson theme e.g. "Climate Change"
+        skill       : The exact skill from the taxonomy to target
+        bias_warning: List of flagged terms from a previous attempt.
+                      If provided, injects an explicit warning into the prompt.
 
     Returns:
         The user prompt string.
     """
-    return (
+    prompt = (
         f"Generate a complete Bantrly lesson with the following parameters:\n\n"
         f"  Grade Band     : {grade_band}\n"
         f"  ELA Domain     : {ela_domain}\n"
@@ -212,9 +220,23 @@ def build_user_prompt(grade_band: str, ela_domain: str, theme: str, skill: str) 
         f"IMPORTANT: You must use the exact Primary Skill string above as the "
         f"'primary_skill' field in your JSON. Do not modify, rephrase, or "
         f"replace it. Build the entire lesson around this specific skill.\n\n"
+    )
+
+    if bias_warning:
+        terms = ", ".join(bias_warning)
+        prompt += (
+            f"⚠️ CULTURAL BIAS WARNING: Your previous attempt was flagged for "
+            f"the following terms: {terms}.\n"
+            f"Do NOT reference these terms or any culturally specific concepts. "
+            f"Use globally inclusive language and universally accessible references only.\n\n"
+        )
+
+    prompt += (
         f"Follow all grade band rules and design principles exactly. "
         f"Return only the JSON object."
     )
+
+    return prompt
 
 
 # =============================================================================
@@ -228,6 +250,7 @@ def build_full_prompt(
     ela_domain: str,
     theme:      str,
     skill:      str,
+    bias_warning: list = None,
 ) -> list[dict]:
     """
     Assemble the complete messages list for the Groq API call.
@@ -247,6 +270,7 @@ def build_full_prompt(
         ela_domain: One of the valid ELA domains
         theme:      The lesson theme
         skill:      The exact skill from the taxonomy to target
+        bias_warning: List of flagged terms from a previous attempt.
 
     Returns:
         A list of message dicts ready to pass to the Groq API.
@@ -272,7 +296,7 @@ def build_full_prompt(
     )
 
     # Part 3: the actual generation request
-    user_prompt = build_user_prompt(grade_band, ela_domain, theme, skill)
+    user_prompt = build_user_prompt(grade_band, ela_domain, theme, skill, bias_warning)
 
     return [
         {"role": "system",    "content": system_prompt},

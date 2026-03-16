@@ -49,6 +49,7 @@ class CheckResult:
     """
     status:  str   # "pass" or "flag"
     message: str
+    flagged_terms: list[str] = None
 
     def passed(self) -> bool:
         return self.status == "pass"
@@ -92,9 +93,30 @@ MULTI_SKILL_SIGNALS = [" and ", " & ", " plus ", " as well as ", " while also "]
 # This is a minimal starter list — a production system would use a
 # more sophisticated classifier. Flagging is not blocking.
 CULTURAL_BIAS_TERMS = [
-    "thanksgiving", "christmas", "halloween", "fourth of july",
-    "american", "our country", "the founding fathers",
-    "as an american", "in america",
+    # US-specific holidays
+    "thanksgiving", "fourth of july", "independence day",
+    "memorial day", "labor day", "presidents day",
+
+    # US-specific cultural references
+    "founding fathers", "pledge of allegiance", "the constitution",
+    "the bill of rights", "the american dream", "manifest destiny",
+    "the civil war", "the revolution",
+
+    # Assumed nationality
+    "american", "our country", "in america", "as an american",
+    "here in the us", "the united states", "back in america",
+
+    # Religion-specific
+    "christmas", "halloween", "easter", "thanksgiving dinner",
+    "the bible", "biblical", "church", "sunday school",
+
+    # Western-centric narratives
+    "western democracy", "the free world", "capitalism as we know it",
+    "the american way", "western values",
+
+    # US sports and pop culture
+    "the nfl", "the nba", "the mlb", "nascar", "the super bowl",
+    "american idol", "the oscars",
 ]
 
 
@@ -400,11 +422,11 @@ def check_cultural_bias(lesson_dict: dict) -> CheckResult:
         return CheckResult(
             status="flag",
             message=(
-                f"Potential cultural specificity detected: {found}. "
-                f"Review whether non-US/non-Western students would have "
-                f"sufficient context. Consider adding a brief explainer or "
-                f"choosing a more globally neutral reference."
-            )
+                f"Cultural bias detected — flagged terms: {found}. "
+                f"These references may exclude non-US or non-Western students. "
+                f"Regenerating with explicit bias warning."
+            ),
+            flagged_terms=found,
         )
 
     return CheckResult(

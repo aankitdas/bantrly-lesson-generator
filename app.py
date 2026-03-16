@@ -375,6 +375,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                     skill_preview = gr.Markdown(value="")
 
                     generate_btn = gr.Button("Generate Lesson", variant="primary")
+                    stop_btn     = gr.Button("Stop", variant="stop")
 
                 with gr.Column(scale=2):
                     gr.Markdown("### Generated Lesson")
@@ -480,7 +481,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             outputs=skill_preview,
         )
 
-        generate_btn.click(
+        gen_event = generate_btn.click(
             fn=generate_lesson,
             inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
             outputs=[
@@ -497,10 +498,15 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         ],
         )
 
-        theme.submit(
-        fn=generate_lesson,
-        inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
-        outputs=[
+        stop_btn.click(
+            fn=None,
+            cancels=[gen_event],
+        )
+
+        submit_event = theme.submit(
+            fn=generate_lesson,
+            inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+            outputs=[
             lesson_output,
             raw_json_output,
             history_state,
@@ -512,7 +518,11 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             taxonomy_output,
             skill_breakdown_output,
         ],
-    )
+        )
+        stop_btn.click(
+            fn=None,
+            cancels=[gen_event, submit_event],
+        )
 
         breakdown_grade.change(
             fn=build_skill_breakdown,
