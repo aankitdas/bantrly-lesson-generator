@@ -16,4 +16,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.BANTRLY }}
-        run: git push https://aankitdas:$BANTRLY@huggingface.co/spaces/aankitdas/bantrly-lesson-generator main
+        run: git push https://aankitdas:$HF_TOKEN@huggingface.co/spaces/aankitdas/bantrly-lesson-generator main
