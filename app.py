@@ -27,10 +27,9 @@ def preview_skill(grade_band, ela_domain):
         return f"Error: {e}"
 
 
-def generate_lesson(grade_band, ela_domain, theme, history):
-    """Main generation function — called on button click."""
+def generate_lesson(grade_band, ela_domain, theme, history, lessons):
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history
+        return "⚠️ Please enter a theme.", "", history, history, lessons
 
     try:
         lesson = gen.generate(
@@ -39,13 +38,9 @@ def generate_lesson(grade_band, ela_domain, theme, history):
             theme=theme.strip()
         )
 
-        # Formatted lesson for Tab 1
         formatted = format_lesson(lesson)
-
-        # Raw JSON for Tab 2
         raw = json.dumps(lesson, indent=2)
 
-        # Update history
         m = lesson["metadata"]
         new_row = [
             lesson["lesson_id"],
@@ -56,15 +51,23 @@ def generate_lesson(grade_band, ela_domain, theme, history):
             datetime.utcnow().strftime("%H:%M:%S"),
         ]
         updated_history = history + [new_row]
+        updated_lessons = lessons + [lesson]
 
-        return formatted, raw, updated_history, updated_history
+        return formatted, raw, updated_history, updated_history, updated_lessons
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history
+        return f"⚠️ Input error: {e}", "", history, history, lessons
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons
+
+def select_lesson_json(evt: gr.SelectData, lessons):
+    """Called when a row is clicked in the history table."""
+    if not lessons or evt.index[0] >= len(lessons):
+        return ""
+    selected_lesson = lessons[evt.index[0]]
+    return json.dumps(selected_lesson, indent=2)
 
 
 def format_lesson(lesson):
@@ -215,8 +218,14 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
     generate_btn.click(
         fn=generate_lesson,
-        inputs=[grade_band, ela_domain, theme, history_state],
-        outputs=[lesson_output, raw_json_output, history_state, history_table],
+        inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+        outputs=[lesson_output, raw_json_output, history_state, history_table, lessons_state],
+    )
+
+    history_table.select(
+        fn=select_lesson_json,
+        inputs=[lessons_state],
+        outputs=raw_json_output,
     )
 
     demo.load(
