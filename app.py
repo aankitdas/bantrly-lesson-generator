@@ -178,6 +178,7 @@ def build_taxonomy_browser(grade_band_sel):
         for skill in report["covered"] + report["remaining"]:
             icon = "✅" if skill.lower() in covered_set else "⬜"
             lines.append(f"{icon} {skill}")
+            lines.append("")
         lines.append("")
 
     # Also show Reading → Speaking interleaved
@@ -191,6 +192,7 @@ def build_taxonomy_browser(grade_band_sel):
     for skill in interleaved:
         icon = "✅" if skill.lower() in covered_set else "⬜"
         lines.append(f"{icon} {skill}")
+        lines.append("")
     lines.append("")
 
     return "\n".join(lines)

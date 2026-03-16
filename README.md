@@ -16,6 +16,8 @@ A research-backed, LLM-powered lesson generation system for K–12 ELA speaking 
 
 Given three inputs — a grade band, an ELA domain, and a theme — the system generates a complete, structured lesson with a narrative hook, worked example, scaffolded practice prompts, and a voice-marker feedback anchor.
 
+🚀 **Live demo:** [huggingface.co/spaces/aankitdas/bantrly-lesson-generator](https://huggingface.co/spaces/aankitdas/bantrly-lesson-generator)
+
 ---
 
 ## How it works
@@ -29,7 +31,7 @@ Teacher inputs: Grade Band + ELA Domain + Theme
         ↓
 3. Prompt construction (system + few-shot example + user request)
         ↓
-4. Groq API call  (llama-3.3-70b-versatile)
+4. Groq API call  (llama-3.1-8b-instant or llama-3.3-70b-versatile)
         ↓
 5. Output validation (parse → field check → guardrail flags)
         ↓
@@ -90,10 +92,13 @@ bantrly-lesson-generator/
 │   ├── 04_grade_specs.ipynb    ← Compare grade band rules side by side
 │   ├── 05_templates.ipynb      ← Inspect the full prompt before it goes to Groq
 │   ├── 06_validator.ipynb      ← Feed malformed JSON, watch it get caught or fixed
-│   └── 07_full_pipeline.ipynb  ← End-to-end demo: input → Groq → validated lesson
+│   ├── 07_full_pipeline.ipynb  ← End-to-end demo: input → Groq → validated lesson
+│   └── 08_skill_selector.ipynb ← Taxonomy exploration and coverage tracking
 │
+├── app.py                      ← Gradio web UI (Hugging Face Spaces)
 ├── main.py                     ← CLI entry point
 ├── pyproject.toml              ← uv project config
+├── requirements.txt            ← HF Spaces dependencies
 ├── .env.example                ← Environment variable template
 └── README.md
 ```
@@ -131,6 +136,17 @@ GROQ_API_KEY=your_key_here
 
 ## Usage
 
+### Web UI (Hugging Face Spaces)
+
+Visit the live demo at [huggingface.co/spaces/aankitdas/bantrly-lesson-generator](https://huggingface.co/spaces/aankitdas/bantrly-lesson-generator).
+
+The UI has 5 tabs:
+- **Generate** — input grade band, domain, theme → get a formatted lesson
+- **Raw JSON & History** — full lesson JSON with generation history table
+- **Coverage Report** — skill coverage heatmap + breakdown per band + domain
+- **Guardrail Inspector** — post-generation check results for the last lesson
+- **Skill Taxonomy** — full CCSS skill list per grade band with coverage indicators
+
 ### CLI
 
 ```bash
@@ -164,7 +180,7 @@ print("Remaining:", report['remaining'])
 
 ### Notebooks
 
-Open any notebook in `notebooks/` with Jupyter. Start with `01_schema.ipynb` and work through to `07_full_pipeline.ipynb` — each one builds on the last.
+Open any notebook in `notebooks/` with Jupyter. Start with `01_schema.ipynb` and work through to `08_skill_selector.ipynb` — each one builds on the last.
 
 ```bash
 uv run jupyter notebook
@@ -185,7 +201,7 @@ Each grade band has a CCSS-aligned skill list per ELA domain. The generator auto
 
 For `Reading → Speaking`, the selector interleaves Reading and Speaking skill lists so both domains are covered evenly.
 
-Once all skills in a band + domain are covered, the selector cycles back to the least recently used skill — ensuring continued variety.
+Once all skills in a band + domain are covered, the selector cycles back deterministically using `len(covered) % len(all_skills)` — rotating through all skills in order indefinitely.
 
 ---
 
@@ -208,7 +224,7 @@ Once all skills in a band + domain are covered, the selector cycles back to the 
 - Empty or malformed theme
 
 ### Post-generation (flags in lesson JSON — never crashes)
-- **Single skill check** — now validates against the taxonomy; `"and"` detection retained as a secondary check for edge cases where the LLM rephrases the injected skill
+- **Single skill check** — validates against the taxonomy; `"and"` detection retained as a secondary check for edge cases where the LLM rephrases the injected skill
 - **Vocabulary ceiling check** — practice prompts within grade band word limit
 - **Cognitive load check** — hook length appropriate for grade band
 - **Cultural bias check** — keyword scan for culturally specific references
@@ -234,15 +250,16 @@ Total lesson time: 5–8 minutes.
 
 - **Cultural bias detection** — keyword-based; misses subtle bias and may produce false positives
 - **One few-shot example per grade band** — a production system would retrieve the most semantically similar example using embeddings
-- **No structured output mode** — Groq supports `response_format` JSON schema enforcement, which would eliminate the practice dict auto-correction entirely
+- **No structured output mode** — Groq supports `response_format` JSON schema enforcement, which would eliminate the practice dict auto-correction entirely; different models return `practice` in different formats — currently handled by a multi-case auto-corrector in `validator.py`
 - **Registry is flat JSON** — works for a prototype; a production system would use a database with semantic deduplication via embeddings
-- **Skill cycling** — once all skills are covered the selector cycles back to the least recently used; a production system would factor in individual student performance data to prioritise weak skills
+- **Skill cycling** — once all skills are covered the selector cycles deterministically; a production system would factor in individual student performance data to prioritise weak skills
+- **Ephemeral HF Spaces storage** — generated lessons and registry reset on Space restart; a production system would use persistent storage
 
 ---
 
 ## Testing
 
-Module behaviour is tested interactively via notebooks 01–06 rather than automated unit tests. A formal test suite is the first addition planned for v2.
+Module behaviour is tested interactively via notebooks 01–08 rather than automated unit tests. A formal test suite is the first addition planned for v2.
 
 ---
 
@@ -250,19 +267,22 @@ Module behaviour is tested interactively via notebooks 01–06 rather than autom
 
 | Decision | Alternative considered | Why we chose this |
 |---|---|---|
-| Groq + Llama 3.3 70B | Claude API | Free tier; sufficient instruction-following for structured JSON |
+| Groq + Llama 3.1 8B or Llama 3.3 70B | Claude API | Free tier; sufficient instruction-following for structured JSON |
 | Hybrid rule + LLM approach | Pure LLM | Guardrails needed for grade-appropriateness; LLM alone drifts |
 | Few-shot examples over RAG | Vector DB retrieval | No infrastructure needed; effective for 5 hand-crafted examples |
 | Flat JSON registry | SQLite / database | Human-readable; inspectable; appropriate for prototype scope |
 | ID assigned post-generation | LLM-assigned ID | LLM anchors on example IDs and reuses numbers — discovered in testing |
 | Skill taxonomy as flat JSON | Database or enum | Human-readable, version-controllable, editable without code changes |
 | Skill injected into prompt | LLM selects freely | LLM produced inconsistent skill strings — taxonomy injection discovered in testing |
+| Multi-case practice autocorrect | Structured output mode | Different models return practice in different formats; autocorrect handles all known cases without API constraints |
 
 ---
 
 ## Built with
 
-- [Groq](https://groq.com) — LLM inference (llama-3.3-70b-versatile)
+- [Groq](https://groq.com) — LLM inference (llama-3.1-8b-instant)
+- [Gradio](https://gradio.app) — web UI for Hugging Face Spaces
 - [Pydantic v2](https://docs.pydantic.dev) — data validation
 - [python-dotenv](https://pypi.org/project/python-dotenv/) — environment config
 - [uv](https://docs.astral.sh/uv/) — package management
+- [matplotlib](https://matplotlib.org) — coverage heatmap visualisation
