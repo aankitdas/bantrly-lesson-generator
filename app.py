@@ -129,8 +129,36 @@ def build_guardrail_display(lesson):
 
     return "\n".join(lines)
 
+# build taxonomy browser
+def build_taxonomy_browser(grade_band_sel):
+    """Show full skill taxonomy for a grade band with coverage indicators."""
+    lines = []
+    lines.append(f"## {grade_band_sel} Skill Taxonomy")
+    lines.append("")
 
+    for domain in DOMAINS:
+        report = get_coverage_report(grade_band_sel, domain)
+        covered_set = set(s.lower() for s in report["covered"])
 
+        lines.append(f"### {domain} — {report['covered_count']}/{report['total']} covered")
+        for skill in report["covered"] + report["remaining"]:
+            icon = "✅" if skill.lower() in covered_set else "⬜"
+            lines.append(f"{icon} {skill}")
+        lines.append("")
+
+    # Also show Reading → Speaking interleaved
+    from src.core.skill_selector import get_skills_for
+    interleaved = get_skills_for(grade_band_sel, "Reading → Speaking")
+    rds_report  = get_coverage_report(grade_band_sel, "Reading → Speaking")
+    covered_set = set(s.lower() for s in rds_report["covered"])
+
+    lines.append(f"### Reading → Speaking (interleaved) — {rds_report['covered_count']}/{rds_report['total']} covered")
+    for skill in interleaved:
+        icon = "✅" if skill.lower() in covered_set else "⬜"
+        lines.append(f"{icon} {skill}")
+    lines.append("")
+
+    return "\n".join(lines)
 
 
 def generate_lesson(grade_band, ela_domain, theme, history, lessons):
@@ -168,16 +196,17 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
             build_coverage_heatmap(),
             build_guardrail_display(lesson),
             preview_skill(m["grade_band"], m["ela_domain"]),
+            build_taxonomy_browser(m["grade_band"]),
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update()
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update()
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -361,7 +390,26 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             guardrail_output = gr.Markdown(
                 value="*Generate a lesson to see guardrail results.*"
             )
+        # =====================================================================
+        # TAB 5 — SKILL TAXONOMY BROWSER
+        # =====================================================================
+        with gr.Tab("Skill Taxonomy"):
 
+            gr.Markdown("""
+            ### Skill Taxonomy Browser
+            CCSS-aligned skills per grade band and domain.
+            ✅ = covered this session · ⬜ = not yet covered
+            
+            *Select a grade band to explore its full skill set.*
+            """)
+
+            taxonomy_grade = gr.Radio(
+                choices=GRADE_BANDS,
+                value="3-5",
+                label="Grade Band",
+            )
+
+            taxonomy_output = gr.Markdown(value="")
         
         # =========================================================================
         # EVENT HANDLERS
@@ -390,6 +438,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             heatmap_plot,
             guardrail_output,
             skill_preview,
+            taxonomy_output,
         ],
         )
 
@@ -405,6 +454,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             heatmap_plot,
             guardrail_output,
             skill_preview,
+            taxonomy_output,
         ],
     )
 
@@ -425,6 +475,12 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             outputs=raw_json_output,
         )
 
+        taxonomy_grade.change(
+            fn=build_taxonomy_browser,
+            inputs=[taxonomy_grade],
+            outputs=taxonomy_output,
+        )
+
         demo.load(
             fn=build_coverage_heatmap,
             outputs=heatmap_plot,
@@ -437,6 +493,11 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         demo.load(
             fn=lambda: "*Generate a lesson to see guardrail results.*",
             outputs=guardrail_output,
+        )
+        demo.load(
+            fn=build_taxonomy_browser,
+            inputs=[taxonomy_grade],
+            outputs=taxonomy_output,
         )
 
 demo.launch()
