@@ -149,34 +149,41 @@ def parse_json_safely(raw: str) -> dict:
 # metadata, and lesson_flow fields.
 # =============================================================================
 
-def autocorrect_practice(data: dict) -> dict:
+def autocorrect_practice(lesson_dict: dict) -> dict:
     """
-    Auto-correct the common LLM mistake of returning practice as a dict
-    instead of a list.
+    Auto-correct common LLM mistakes in the practice field.
 
-    The model sometimes returns:
-        "practice": { "P1": { ... }, "P2": { ... } }
-
-    When we need:
-        "practice": [ { "prompt_id": "P1", ... }, { "prompt_id": "P2", ... } ]
-
-    This corrects that silently before field validation runs.
+    Handles two known cases:
+        1. practice is a dict with string keys → convert values to list
+        2. practice is a dict with a "prompts" key → unwrap the list
     """
-    try:
-        practice = data["lesson_flow"]["practice"]
-        if isinstance(practice, dict):
-            print("[validator] ⚠️  practice was a dict — auto-correcting to list...")
-            corrected = []
-            for key, value in practice.items():
-                if isinstance(value, dict):
-                    if "prompt_id" not in value:
-                        value["prompt_id"] = key
-                    corrected.append(value)
-            data["lesson_flow"]["practice"] = corrected
-            print(f"[validator] Auto-corrected practice → {len(corrected)} prompts ")
-    except (KeyError, TypeError):
-        pass
-    return data
+    practice = lesson_dict.get("lesson_flow", {}).get("practice")
+
+    if isinstance(practice, dict):
+        # Case 1: {"prompts": [...]} — unwrap the list
+        if "prompts" in practice and isinstance(practice["prompts"], list):
+            print("[validator] ⚠️  practice was a dict with 'prompts' key — unwrapping...")
+            lesson_dict["lesson_flow"]["practice"] = practice["prompts"]
+
+        else:
+            # Case 2: {"P1": {...}, "P2": {...}} — convert values to list
+            # Case 3: any other dict — find the first list value that looks like prompts
+            extracted = False
+            for value in practice.values():
+                if isinstance(value, list) and len(value) > 0:
+                    print("[validator] ⚠️  practice was an unknown dict — extracting first list value...")
+                    lesson_dict["lesson_flow"]["practice"] = value
+                    extracted = True
+                    break
+
+            if not extracted:
+                print("[validator] ⚠️  practice was a dict — auto-correcting to list...")
+                lesson_dict["lesson_flow"]["practice"] = list(practice.values())
+
+        corrected = lesson_dict["lesson_flow"]["practice"]
+        print(f"[validator] Auto-corrected practice → {len(corrected)} prompts")
+
+    return lesson_dict
 
 
 def validate_required_fields(data: dict) -> None:
