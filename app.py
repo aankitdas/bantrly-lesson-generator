@@ -2,7 +2,7 @@ import gradio as gr
 import json
 import os
 import sys
-
+from datetime import datetime
 # Ensure src/ is importable
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -27,10 +27,10 @@ def preview_skill(grade_band, ela_domain):
         return f"Error: {e}"
 
 
-def generate_lesson(grade_band, ela_domain, theme):
+def generate_lesson(grade_band, ela_domain, theme, history):
     """Main generation function — called on button click."""
     if not theme.strip():
-        return "⚠️ Please enter a theme.", ""
+        return "⚠️ Please enter a theme.", "", history, history
 
     try:
         lesson = gen.generate(
@@ -38,14 +38,33 @@ def generate_lesson(grade_band, ela_domain, theme):
             ela_domain=ela_domain,
             theme=theme.strip()
         )
+
+        # Formatted lesson for Tab 1
         formatted = format_lesson(lesson)
-        return formatted
+
+        # Raw JSON for Tab 2
+        raw = json.dumps(lesson, indent=2)
+
+        # Update history
+        m = lesson["metadata"]
+        new_row = [
+            lesson["lesson_id"],
+            m["grade_band"],
+            m["ela_domain"],
+            m["primary_skill"][:50] + "...",
+            m["theme"],
+            datetime.utcnow().strftime("%H:%M:%S"),
+        ]
+        updated_history = history + [new_row]
+
+        return formatted, raw, updated_history, updated_history
+
     except ValueError as e:
-        return f"⚠️ Input error: {e}"
+        return f"⚠️ Input error: {e}", "", history, history
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}"
+        return f"⚠️ Generation failed: {e}", "", history, history
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}"
+        return f"⚠️ Unexpected error: {e}", "", history, history
 
 
 def format_lesson(lesson):
@@ -112,43 +131,77 @@ def format_lesson(lesson):
 
 with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
+    # In-memory session state for generation history
+    history_state = gr.State([])
+
     gr.Markdown("""
     # 📚 Bantrly Lesson Generator
     Research-backed K–12 ELA lesson generation. Enter a grade band, domain, and theme — the system selects the next uncovered CCSS-aligned skill and generates a complete structured lesson.
     """)
 
-    with gr.Row():
-        with gr.Column(scale=1):
+    with gr.Tabs():
 
-            gr.Markdown("### Inputs")
+        # =====================================================================
+        # TAB 1 — GENERATE
+        # =====================================================================
+        with gr.Tab("Generate"):
+            with gr.Row():
+                with gr.Column(scale=1):
 
-            grade_band = gr.Radio(
-                choices=GRADE_BANDS,
-                value="3-5",
-                label="Grade Band",
+                    gr.Markdown("### Inputs")
+
+                    grade_band = gr.Radio(
+                        choices=GRADE_BANDS,
+                        value="3-5",
+                        label="Grade Band",
+                    )
+
+                    ela_domain = gr.Radio(
+                        choices=ELA_DOMAINS,
+                        value="Speaking",
+                        label="ELA Domain",
+                    )
+
+                    theme = gr.Textbox(
+                        label="Theme",
+                        placeholder="e.g. Space Exploration, Climate Change...",
+                        lines=1,
+                    )
+
+                    skill_preview = gr.Markdown(value="")
+
+                    generate_btn = gr.Button("Generate Lesson", variant="primary")
+
+                with gr.Column(scale=2):
+                    gr.Markdown("### Generated Lesson")
+                    lesson_output = gr.Markdown(value="*Your lesson will appear here.*")
+
+        # =====================================================================
+        # TAB 2 — RAW JSON + HISTORY
+        # =====================================================================
+        with gr.Tab("Raw JSON & History"):
+
+            gr.Markdown("### Last Generated Lesson — Raw JSON")
+            raw_json_output = gr.Code(
+                label="",
+                language="json",
+                lines=30,
+                value="",
             )
 
-            ela_domain = gr.Radio(
-                choices=ELA_DOMAINS,
-                value="Speaking",
-                label="ELA Domain",
+            gr.Markdown("### Generation History (this session)")
+            history_table = gr.Dataframe(
+                headers=["Lesson ID", "Grade", "Domain", "Skill", "Theme", "Time"],
+                datatype=["str", "str", "str", "str", "str", "str"],
+                value=[],
+                label="",
+                interactive=False,
             )
 
-            theme = gr.Textbox(
-                label="Theme",
-                placeholder="e.g. Space Exploration, Climate Change, Ancient Civilizations...",
-                lines=1,
-            )
+    # =========================================================================
+    # EVENT HANDLERS
+    # =========================================================================
 
-            skill_preview = gr.Markdown(value="")
-
-            generate_btn = gr.Button("Generate Lesson", variant="primary")
-
-        with gr.Column(scale=2):
-            gr.Markdown("### Generated Lesson")
-            lesson_output = gr.Markdown(value="*Your lesson will appear here.*")
-
-    # Update skill preview when grade band or domain changes
     grade_band.change(
         fn=preview_skill,
         inputs=[grade_band, ela_domain],
@@ -160,14 +213,12 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         outputs=skill_preview,
     )
 
-    # Generate on button click
     generate_btn.click(
         fn=generate_lesson,
-        inputs=[grade_band, ela_domain, theme],
-        outputs=lesson_output,
+        inputs=[grade_band, ela_domain, theme, history_state],
+        outputs=[lesson_output, raw_json_output, history_state, history_table],
     )
 
-    # Show initial skill preview on load
     demo.load(
         fn=preview_skill,
         inputs=[grade_band, ela_domain],
