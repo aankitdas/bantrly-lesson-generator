@@ -95,6 +95,42 @@ def build_skill_breakdown(grade_band_sel, domain_sel):
 
     return "\n".join(lines)
 
+# Build guardrails
+def build_guardrail_display(lesson):
+    """Format guardrail flags from a lesson dict into readable markdown."""
+    if not lesson:
+        return "*Generate a lesson to see guardrail results.*"
+
+    flags = lesson.get("guardrail_flags", {})
+
+    check_labels = {
+        "single_skill_check":       "Single Skill Check",
+        "vocabulary_ceiling_check": "Vocabulary Ceiling Check",
+        "cognitive_load_check":     "Cognitive Load Check",
+        "cultural_bias_check":      "Cultural Bias Check",
+    }
+
+    lines = []
+    lines.append(f"### Guardrail Results — `{lesson['lesson_id']}`")
+    lines.append(f"*{lesson['metadata']['grade_band']} · {lesson['metadata']['ela_domain']} · {lesson['metadata']['theme']}*")
+    lines.append("")
+
+    for key, label in check_labels.items():
+        result = flags.get(key, {})
+        status  = result.get("status", "unknown")
+        message = result.get("message", "No message.")
+        icon    = "✅" if status == "pass" else "⚠️"
+        lines.append(f"#### {icon} {label}")
+        lines.append(f"**Status:** `{status.upper()}`")
+        lines.append(f"{message}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+
+
+
 def generate_lesson(grade_band, ela_domain, theme, history, lessons):
     if not theme.strip():
         return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update()
@@ -128,14 +164,18 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
             updated_history,
             updated_lessons,
             build_coverage_heatmap(),
+            build_guardrail_display(lesson),
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update()
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update()
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update()
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update()
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update()
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update()
+    if not theme.strip():
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update()
+
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -303,7 +343,24 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                 )
 
             skill_breakdown_output = gr.Markdown(value="")
+        
+        # =====================================================================
+        # TAB 4 — GUARDRAIL INSPECTOR
+        # =====================================================================
+        with gr.Tab("Guardrail Inspector"):
+            gr.Markdown("""
+            ### Guardrail Inspector
+            Shows the 4 post-generation checks run on every lesson.
+            - ✅ **Pass** — no issues detected
+            - ⚠️ **Flag** — issue detected, recorded in lesson JSON but never blocks generation
 
+            *Updates automatically after each generation.*
+            """)
+            guardrail_output = gr.Markdown(
+                value="*Generate a lesson to see guardrail results.*"
+            )
+
+        
         # =========================================================================
         # EVENT HANDLERS
         # =========================================================================
@@ -329,6 +386,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                 history_table,
                 lessons_state,
                 heatmap_plot,
+                guardrail_output,
             ],
         )
 
@@ -357,6 +415,10 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             fn=build_skill_breakdown,
             inputs=[breakdown_grade, breakdown_domain],
             outputs=skill_breakdown_output,
+        )
+        demo.load(
+            fn=lambda: "*Generate a lesson to see guardrail results.*",
+            outputs=guardrail_output,
         )
 
 demo.launch()
