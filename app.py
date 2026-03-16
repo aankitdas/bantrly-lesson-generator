@@ -167,17 +167,17 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
             updated_lessons,
             build_coverage_heatmap(),
             build_guardrail_display(lesson),
+            preview_skill(m["grade_band"], m["ela_domain"]),
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update()
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update()
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update()
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update()
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update()
-
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update()
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -382,14 +382,15 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             fn=generate_lesson,
             inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
             outputs=[
-                lesson_output,
-                raw_json_output,
-                history_state,
-                history_table,
-                lessons_state,
-                heatmap_plot,
-                guardrail_output,
-            ],
+            lesson_output,
+            raw_json_output,
+            history_state,
+            history_table,
+            lessons_state,
+            heatmap_plot,
+            guardrail_output,
+            skill_preview,
+        ],
         )
 
         theme.submit(
@@ -403,6 +404,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             lessons_state,
             heatmap_plot,
             guardrail_output,
+            skill_preview,
         ],
     )
 
