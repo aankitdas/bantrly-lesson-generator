@@ -48,7 +48,7 @@ load_dotenv()
 # The Groq model we use for generation.
 # llama-3.3-70b-versatile is currently the best free-tier model
 # for instruction-following and structured JSON output on Groq.
-GROQ_MODEL = "llama-3.1-8b-instant" #"llama-3.3-70b-versatile"
+GROQ_MODEL = "llama-3.1-8b-instant" # "llama-3.3-70b-versatile" # "llama-3.1-8b-instant"
 
 # Generation parameters
 MAX_TOKENS   = 4096   # Enough for a complete lesson JSON

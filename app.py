@@ -273,13 +273,15 @@ def format_lesson(lesson):
     lines.append("")
 
     # Voice markers
-    lines.append(f"### 🎙️ Voice Markers")
-    lines.append(", ".join(m['voice_markers']))
-    lines.append("")
+    if m.get('voice_markers') and (m['ela_domain'] == "Speaking" or m['ela_domain'] == "Reading → Speaking"):
+        lines.append(f"### 🎙️ Voice Markers")
+        lines.append(", ".join(m['voice_markers']))
+        lines.append("")
 
     # Hook
     lines.append(f"### 🪝 Hook")
     lines.append(flow['hook']['content'])
+    lines.append("")
     if flow['hook'].get('learning_goal_connection'):
         lines.append(f"*🔗 {flow['hook']['learning_goal_connection']}*")
     lines.append("")
@@ -298,6 +300,7 @@ def format_lesson(lesson):
         lines.append(f"{p['text']}")
         if p.get('scaffold'):
             lines.append(f"*Scaffold: {p['scaffold']}*")
+        lines.append("")
         if p.get('learning_goal_connection'):
             lines.append(f"*🔗 {p['learning_goal_connection']}*")
         lines.append("")
@@ -305,12 +308,18 @@ def format_lesson(lesson):
     # Reflect
     lines.append(f"### 🪞 Reflect")
     reflect = flow.get('reflect', {})
+    # Handle both flat and nested feedback_anchors structure
+    if 'feedback_anchors' in reflect:
+        reflect_data = reflect['feedback_anchors']
+    else:
+        reflect_data = reflect
     lines.append(f"**Voice marker focus:** {reflect.get('voice_marker_focus', 'N/A')}")
     lines.append(f"✅ {reflect.get('positive_signal', 'N/A')}")
+    lines.append("")
     lines.append(f"📈 {reflect.get('growth_signal', 'N/A')}")
+    lines.append("")
     if reflect.get('learning_goal_connection'):
         lines.append(f"*🔗 {reflect['learning_goal_connection']}*")
-    lines.append("")
 
     # Lesson ID
     lines.append(f"---")

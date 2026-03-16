@@ -270,7 +270,42 @@ def validate_against_schema(data: dict) -> dict:
 
     return data
 
+def strip_non_speaking_fields(lesson_dict: dict) -> dict:
+    """
+    Remove Speaking-specific fields from lessons that are not
+    Speaking or Reading → Speaking — the LLM includes them anyway
+    despite instructions.
+    """
+    ela_domain = lesson_dict.get("metadata", {}).get("ela_domain", "")
 
+    if ela_domain in ("Speaking", "Reading → Speaking"):
+        return lesson_dict
+
+    # Strip voice markers
+    lesson_dict.get("metadata", {})["voice_markers"] = []
+
+    # Strip learning_goal_connection from hook
+    lesson_dict.get("lesson_flow", {}).get("hook", {}).pop("learning_goal_connection", None)
+
+    # Strip from practice prompts
+    for p in lesson_dict.get("lesson_flow", {}).get("practice", []):
+        p.pop("learning_goal_connection", None)
+
+    # Strip from reflect
+    lesson_dict.get("lesson_flow", {}).get("reflect", {}).pop("learning_goal_connection", None)
+    
+    return lesson_dict
+
+def normalize_reflect(lesson_dict: dict) -> dict:
+    """
+    Flatten feedback_anchors into reflect if the LLM nested them.
+    Normalises: reflect.feedback_anchors.x → reflect.x
+    """
+    reflect = lesson_dict.get("lesson_flow", {}).get("reflect", {})
+    if "feedback_anchors" in reflect:
+        anchors = reflect.pop("feedback_anchors")
+        reflect.update(anchors)
+    return lesson_dict
 # =============================================================================
 # MASTER VALIDATION FUNCTION
 # Runs all four steps in sequence.
@@ -284,7 +319,8 @@ def validate_llm_output(raw: str) -> dict:
         2. Parse JSON
         3. Validate required fields
         4. Run guardrail checks and embed results
-
+        5. Strip Speaking-specific fields if needed
+        6. Normalize reflect
     Args:
         raw: The raw string returned by the Groq API.
 
@@ -315,6 +351,14 @@ def validate_llm_output(raw: str) -> dict:
     # Step 4
     data = validate_against_schema(data)
     print("[validator] Step 4 — Guardrail checks complete ✅")
+
+    # Step 5
+    data = strip_non_speaking_fields(data)
+    print("[validator] Step 5 — Speaking-specific fields stripped ✅")
+
+    # Step 6
+    data = normalize_reflect(data)
+    print("[validator] Step 6 — Reflect normalized ✅")
 
     print(f"[validator] Validation passed for lesson: {data.get('lesson_id', 'UNKNOWN')}")
     return data
