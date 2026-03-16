@@ -1,0 +1,122 @@
+{
+    "K-2": {
+        "Speaking": [
+            "Retell a story in sequence using beginning, middle, and end",
+            "Describe a person, place, or thing using sensory details",
+            "Ask and answer questions about a topic using complete sentences",
+            "Share an opinion and give one reason to support it",
+            "Give a two-step oral instruction in the correct order"
+        ],
+        "Listening": [
+            "Identify the main topic of a read-aloud using key details",
+            "Retell the key details of an informational text after listening",
+            "Follow two-step spoken directions in the correct order",
+            "Ask a clarifying question after listening to a short presentation",
+            "Identify how a speaker uses tone to show feeling"
+        ],
+        "Reading": [
+            "Identify the main idea of a short text and one supporting detail",
+            "Describe the connection between two events in a story",
+            "Use context clues to determine the meaning of an unfamiliar word",
+            "Identify the difference between fiction and informational text",
+            "Ask and answer questions about a text using evidence from the page"
+        ],
+        "Writing": [
+            "Write a sentence that states an opinion and gives one reason",
+            "Write a sequence of two events using transition words",
+            "Write a descriptive sentence using at least two sensory details",
+            "Write a question and a matching answer about a topic",
+            "Write a simple informational sentence about a familiar subject"
+        ]
+    },
+    "3-5": {
+        "Speaking": [
+            "Present a main idea with two supporting details in logical order",
+            "Use transition words to connect ideas when speaking",
+            "Explain a process step by step in your own words",
+            "Respond to a peer's idea by agreeing or disagreeing with a reason",
+            "Adjust volume and pace to match the purpose of a presentation"
+        ],
+        "Listening": [
+            "Summarise a speaker's main idea in one or two sentences",
+            "Identify two supporting details from an oral presentation",
+            "Evaluate whether a speaker's reason supports their claim",
+            "Take brief notes while listening to an informational talk",
+            "Identify how visual aids support a speaker's message"
+        ],
+        "Reading": [
+            "Identify the main idea and two supporting details of an informational text",
+            "Compare and contrast two characters using text evidence",
+            "Determine the meaning of a figurative expression in context",
+            "Explain how an author uses text structure to organise information",
+            "Summarise a passage without including personal opinion"
+        ],
+        "Writing": [
+            "Write a paragraph with a clear topic sentence and two supporting details",
+            "Use transition words to connect ideas across sentences",
+            "Write a conclusion sentence that restates the main idea",
+            "Revise a sentence to improve word choice and clarity",
+            "Write a compare and contrast paragraph using a graphic organiser"
+        ]
+    },
+    "6-8": {
+        "Speaking": [
+            "Present a claim and support it with two pieces of evidence",
+            "Use precise academic vocabulary appropriate to the topic",
+            "Acknowledge a counterclaim and explain why your position is stronger",
+            "Organise a spoken argument using a clear claim, evidence, and conclusion",
+            "Use eye contact and deliberate pacing to engage an audience"
+        ],
+        "Listening": [
+            "Evaluate the strength of evidence used to support a speaker's claim",
+            "Identify the difference between a speaker's opinion and factual evidence",
+            "Summarise a multi-point argument in two or three sentences",
+            "Identify logical fallacies or weak reasoning in a spoken argument",
+            "Analyse how a speaker's word choice shapes the tone of a message"
+        ],
+        "Reading": [
+            "Analyse how a central idea develops across paragraphs in a text",
+            "Evaluate the strength of an author's argument using text evidence",
+            "Determine the connotative meaning of words in an argumentative text",
+            "Compare how two authors present different perspectives on the same topic",
+            "Identify the author's purpose and explain how structure supports it"
+        ],
+        "Writing": [
+            "Write a claim statement that is specific and arguable",
+            "Integrate a direct quote as evidence and explain its relevance",
+            "Write a rebuttal paragraph that addresses a counterclaim",
+            "Use formal academic language appropriate for an argumentative essay",
+            "Write a conclusion that synthesises the argument rather than restating it"
+        ]
+    },
+    "9-12": {
+        "Speaking": [
+            "Construct and deliver a persuasive argument using logos, ethos, and pathos",
+            "Anticipate and address audience objections within a spoken argument",
+            "Use rhetorical devices such as repetition or antithesis to strengthen a point",
+            "Synthesise evidence from multiple sources into a coherent spoken argument",
+            "Adapt register and tone for a specific audience and purpose"
+        ],
+        "Listening": [
+            "Evaluate the logical structure of a complex spoken argument",
+            "Identify rhetorical strategies a speaker uses to persuade an audience",
+            "Assess the credibility and relevance of evidence in a spoken presentation",
+            "Synthesise ideas from two speakers presenting opposing viewpoints",
+            "Identify how a speaker's tone and delivery influence audience perception"
+        ],
+        "Reading": [
+            "Analyse how an author builds a sustained argument across an entire text",
+            "Evaluate the validity and sufficiency of evidence in a persuasive text",
+            "Identify and analyse the effect of rhetorical devices in a written text",
+            "Compare the argumentation strategies of two texts on the same topic",
+            "Determine how an author's background and purpose shape their perspective"
+        ],
+        "Writing": [
+            "Write a thesis statement that makes a complex, defensible claim",
+            "Develop an argument using evidence from at least two distinct sources",
+            "Write a paragraph that addresses and refutes a nuanced counterclaim",
+            "Use varied syntax and precise diction to strengthen persuasive writing",
+            "Write a conclusion that extends the argument beyond the scope of the essay"
+        ]
+    }
+}
