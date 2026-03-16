@@ -13,15 +13,17 @@ Teacher inputs: Grade Band + ELA Domain + Theme
         ↓
 1. Pre-generation guardrail checks
         ↓
-2. Prompt construction (system + few-shot example + user request)
+2. Skill auto-selected from CCSS taxonomy
         ↓
-3. Groq API call  (llama-3.3-70b-versatile)
+3. Prompt construction (system + few-shot example + user request)
         ↓
-4. Output validation (parse → field check → guardrail flags)
+4. Groq API call  (llama-3.3-70b-versatile)
         ↓
-5. Unique ID assignment + save to data/generated/
+5. Output validation (parse → field check → guardrail flags)
         ↓
-6. Deduplication registry update
+6. Unique ID assignment + save to data/generated/
+        ↓
+7. Skill coverage registry update
         ↓
 Validated lesson JSON
 ```
@@ -41,6 +43,7 @@ Every design decision maps to a specific body of evidence:
 | Specific voice-marker feedback | Hattie & Timperley (2007) — feedback and learning |
 | Grade-band vocabulary ceilings | Sweller (1988) — cognitive load by developmental stage |
 | Deduplication across generations | Ebbinghaus (1885) — spaced repetition, varied practice |
+| CCSS-aligned skill taxonomy per grade band | Rosenshine (2012) — measurable single-skill objectives |
 
 ---
 
@@ -51,20 +54,22 @@ bantrly-lesson-generator/
 ├── src/
 │   ├── core/
 │   │   ├── schema.py           ← Pydantic data models for the lesson blueprint
-│   │   └── generator.py        ← Main orchestrator — ties all modules together
+│   │   ├── generator.py        ← Main orchestrator — ties all modules together
+│   │   └── skill_selector.py   ← Selects next uncovered skill from taxonomy
 │   ├── guardrails/
 │   │   └── checks.py           ← Pre- and post-generation validation checks
 │   ├── prompts/
 │   │   ├── grade_specs.py      ← Research-grounded grade band rules as data
 │   │   └── templates.py        ← Prompt construction (system + few-shot + user)
 │   └── utils/
-│       ├── file_handler.py     ← Save/load lessons, deduplication registry
+│       ├── file_handler.py     ← Save/load lessons, skill coverage registry
 │       └── validator.py        ← LLM output parsing and auto-correction
 │
 ├── data/
 │   ├── examples/               ← 5 hand-crafted lessons used as few-shot references
+│   ├── skills/                 ← CCSS-aligned skill taxonomy per grade band
 │   ├── generated/              ← LLM-generated lessons saved here (gitignored)
-│   └── registry/               ← Deduplication log (gitignored)
+│   └── registry/               ← Skill coverage log (gitignored)
 │
 ├── notebooks/
 │   ├── 01_schema.ipynb         ← Explore the Lesson data model and Pydantic validation
@@ -135,6 +140,16 @@ lesson = gen.generate(
 )
 ```
 
+### Check skill coverage
+
+```python
+from src.core.skill_selector import get_coverage_report
+
+report = get_coverage_report("6-8", "Speaking")
+print(f"{report['covered_count']}/{report['total']} skills covered")
+print("Remaining:", report['remaining'])
+```
+
 ### Notebooks
 
 Open any notebook in `notebooks/` with Jupyter. Start with `01_schema.ipynb` and work through to `07_full_pipeline.ipynb` — each one builds on the last.
@@ -142,6 +157,23 @@ Open any notebook in `notebooks/` with Jupyter. Start with `01_schema.ipynb` and
 ```bash
 uv run jupyter notebook
 ```
+
+---
+
+## Skill taxonomy
+
+Each grade band has a CCSS-aligned skill list per ELA domain. The generator automatically selects the next uncovered skill on each run, ensuring full curriculum coverage over time.
+
+| Band | Skills per domain | Total skills |
+|---|---|---|
+| K-2 | 5 | 20 |
+| 3-5 | 5 | 20 |
+| 6-8 | 5 | 20 |
+| 9-12 | 5 | 20 |
+
+For `Reading → Speaking`, the selector interleaves Reading and Speaking skill lists so both domains are covered evenly.
+
+Once all skills in a band + domain are covered, the selector cycles back to the least recently used skill — ensuring continued variety.
 
 ---
 
@@ -164,7 +196,7 @@ uv run jupyter notebook
 - Empty or malformed theme
 
 ### Post-generation (flags in lesson JSON — never crashes)
-- **Single skill check** — detects conjunctions in the skill name
+- **Single skill check** — now validates against the taxonomy; `"and"` detection retained as a secondary check for edge cases where the LLM rephrases the injected skill
 - **Vocabulary ceiling check** — practice prompts within grade band word limit
 - **Cognitive load check** — hook length appropriate for grade band
 - **Cultural bias check** — keyword scan for culturally specific references
@@ -188,17 +220,17 @@ Total lesson time: 5–8 minutes.
 
 ## Known limitations
 
-- **Single skill check** — `"and"` detection produces false positives when "and" appears in descriptive language rather than joining two skills
 - **Cultural bias detection** — keyword-based; misses subtle bias and may produce false positives
 - **One few-shot example per grade band** — a production system would retrieve the most semantically similar example using embeddings
 - **No structured output mode** — Groq supports `response_format` JSON schema enforcement, which would eliminate the practice dict auto-correction entirely
 - **Registry is flat JSON** — works for a prototype; a production system would use a database with semantic deduplication via embeddings
+- **Skill cycling** — once all skills are covered the selector cycles back to the least recently used; a production system would factor in individual student performance data to prioritise weak skills
 
 ---
 
 ## Testing
 
-Module behaviour is tested interactively via notebooks 01–06 rather than automated unit tests. Unit test stubs are present in `tests/` — a formal test suite is the first addition planned for v2.
+Module behaviour is tested interactively via notebooks 01–06 rather than automated unit tests. A formal test suite is the first addition planned for v2.
 
 ---
 
@@ -211,6 +243,8 @@ Module behaviour is tested interactively via notebooks 01–06 rather than autom
 | Few-shot examples over RAG | Vector DB retrieval | No infrastructure needed; effective for 5 hand-crafted examples |
 | Flat JSON registry | SQLite / database | Human-readable; inspectable; appropriate for prototype scope |
 | ID assigned post-generation | LLM-assigned ID | LLM anchors on example IDs and reuses numbers — discovered in testing |
+| Skill taxonomy as flat JSON | Database or enum | Human-readable, version-controllable, editable without code changes |
+| Skill injected into prompt | LLM selects freely | LLM produced inconsistent skill strings — taxonomy injection discovered in testing |
 
 ---
 

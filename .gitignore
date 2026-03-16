@@ -17,6 +17,8 @@ data/generated/*
 !data/generated/.gitkeep
 data/registry/*
 !data/registry/.gitkeep
+data/skills/*
+!data/skills/.gitkeep
 
 # Test files
 test_*.py

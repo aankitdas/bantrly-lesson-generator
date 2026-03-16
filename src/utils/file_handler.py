@@ -198,7 +198,7 @@ def save_registry(registry: dict) -> None:
         json.dump(registry, f, indent=2, ensure_ascii=False)
 
 
-def combo_exists(theme: str, skill: str, grade_band: str) -> bool:
+def combo_exists(theme: str, skill: str, grade_band: str, ela_domain: str) -> bool:
     """
     Check if a theme x skill x grade_band combination has already
     been used. Comparison is case-insensitive.
@@ -207,6 +207,7 @@ def combo_exists(theme: str, skill: str, grade_band: str) -> bool:
         theme:      e.g. "Space Exploration"
         skill:      e.g. "retell a story in sequence"
         grade_band: e.g. "K-2"
+        ela_domain: e.g. "Speaking"
 
     Returns:
         True if the combo already exists, False if it's new.
@@ -217,14 +218,15 @@ def combo_exists(theme: str, skill: str, grade_band: str) -> bool:
         if (
             entry["theme"].lower()      == theme.lower()      and
             entry["skill"].lower()      == skill.lower()      and
-            entry["grade_band"].lower() == grade_band.lower()
+            entry["grade_band"].lower() == grade_band.lower() and
+            entry.get("ela_domain", "").lower() == ela_domain.lower()
         ):
             return True
 
     return False
 
 
-def register_combo(theme: str, skill: str, grade_band: str, lesson_id: str) -> None:
+def register_combo(theme: str, skill: str, grade_band: str, ela_domain: str, lesson_id: str) -> None:
     """
     Add a new theme x skill x grade_band combo to the registry.
     Should be called immediately after a lesson is successfully generated.
@@ -233,6 +235,7 @@ def register_combo(theme: str, skill: str, grade_band: str, lesson_id: str) -> N
         theme:      e.g. "Space Exploration"
         skill:      e.g. "retell a story in sequence"
         grade_band: e.g. "K-2"
+        ela_domain: e.g. "Speaking"
         lesson_id:  e.g. "L-K2-SPK-001"
     """
     registry = load_registry()
@@ -241,6 +244,7 @@ def register_combo(theme: str, skill: str, grade_band: str, lesson_id: str) -> N
         "theme":        theme,
         "skill":        skill,
         "grade_band":   grade_band,
+        "ela_domain":   ela_domain,
         "lesson_id":    lesson_id,
         "generated_at": datetime.utcnow().isoformat()
     }
@@ -249,3 +253,34 @@ def register_combo(theme: str, skill: str, grade_band: str, lesson_id: str) -> N
     save_registry(registry)
 
     print(f"[file_handler] Registered combo → {grade_band} | {theme} | {skill}")
+
+def get_covered_skills(grade_band: str, ela_domain: str) -> list[str]:
+    """
+    Return skills already covered for a grade band + domain from the registry.
+    Ordered oldest → newest (insertion order).
+
+    Args:
+        grade_band: e.g. "K-2"
+        ela_domain: e.g. "Speaking"
+
+    Returns:
+        List of skill strings already generated for this band + domain.
+    """
+    registry   = load_registry()
+    domain_key = ela_domain.lower()
+    covered    = []
+
+    for entry in registry["used_combinations"]:
+        if entry["grade_band"].lower() != grade_band.lower():
+            continue
+
+        entry_domain = entry.get("ela_domain", "").lower()
+
+        if ela_domain == "Reading → Speaking":
+            if entry_domain in ("reading → speaking", "reading", "speaking"):
+                covered.append(entry["skill"])
+        else:
+            if entry_domain == domain_key:
+                covered.append(entry["skill"])
+
+    return covered

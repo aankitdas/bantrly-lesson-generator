@@ -185,25 +185,26 @@ def validate_theme(theme: str) -> CheckResult:
     )
 
 
-def check_deduplication(theme: str, skill: str, grade_band: str) -> CheckResult:
+def check_deduplication(theme: str, skill: str, grade_band: str, ela_domain: str) -> CheckResult:
     """
-    Check if this theme x skill x grade_band combination has already
-    been generated. Delegates to file_handler's registry.
+    Check if this theme x skill x grade_band x ela_domain combination
+    has already been generated.
 
     Args:
         theme:      e.g. "Space Exploration"
-        skill:      e.g. "retell a story in sequence"
-        grade_band: e.g. "K-2"
+        skill:      e.g. "Present a main idea with two supporting details"
+        grade_band: e.g. "3-5"
+        ela_domain: e.g. "Speaking"
 
     Returns:
         CheckResult — flagged if the combo already exists.
     """
-    if combo_exists(theme, skill, grade_band):
+    if combo_exists(theme, skill, grade_band, ela_domain):
         return CheckResult(
             status="flag",
             message=(
-                f"Combination already used: '{theme}' × '{skill}' × '{grade_band}'. "
-                f"Try a different theme or skill to avoid repetition."
+                f"Combination already used: '{theme}' × '{skill}' × '{grade_band}' × '{ela_domain}'. "
+                f"Try a different theme to avoid repetition."
             )
         )
     return CheckResult(

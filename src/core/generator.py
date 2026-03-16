@@ -36,6 +36,7 @@ from src.guardrails.checks import run_pre_checks, check_deduplication
 from src.prompts.templates import build_full_prompt, inspect_prompt
 from src.utils.validator    import validate_llm_output, ValidationError
 from src.utils.file_handler import save_lesson, register_combo, DATA_GENERATED
+from src.core.skill_selector import get_next_skill
 
 # Load environment variables from .env
 load_dotenv()
@@ -116,6 +117,7 @@ class LessonGenerator:
         grade_band : str,
         ela_domain : str,
         theme      : str,
+        skill      : str = None,
         skip_dedup : bool = False,
     ) -> dict:
         """
@@ -126,6 +128,8 @@ class LessonGenerator:
             ela_domain : One of "Speaking", "Listening", "Reading",
                          "Writing", "Reading → Speaking"
             theme      : The lesson theme e.g. "Climate Change"
+            skill      : Optional. The exact skill from the taxonomy to target.
+                         If None, the next skill in the domain will be selected.
             skip_dedup : If True, skip deduplication check.
                          Useful for testing. Default False.
 
@@ -157,26 +161,34 @@ class LessonGenerator:
         # ------------------------------------------------------------------
         if not skip_dedup:
             self._log("[generator] Step 2 — Checking deduplication...")
-            dedup = check_deduplication(theme, theme, grade_band)
+            dedup = check_deduplication(theme, theme, grade_band, ela_domain)
             if not dedup.passed():
                 self._log(f"[generator] ⚠️  {dedup.message}")
                 self._log("[generator] Proceeding anyway — skill may differ.")
 
         # ------------------------------------------------------------------
-        # STEP 3: Build the prompt
+        # STEP 3: Select skill from taxonomy
+        # If no skill is provided, auto-select the next uncovered skill
+        # for this grade band + domain combination.
         # ------------------------------------------------------------------
-        self._log("\n[generator] Step 3 — Building prompt...")
-        messages = build_full_prompt(grade_band, ela_domain, theme)
-
-        if self.verbose:
-            total_chars = sum(len(m["content"]) for m in messages)
-            self._log(f"[generator] Prompt built — {total_chars:,} chars (~{total_chars//4:,} tokens)")
+        self._log("\n[generator] Step 3 — Selecting skill...")
+        if skill is None:
+            skill = get_next_skill(grade_band, ela_domain)
+            self._log(f"[generator] Auto-selected skill: {skill}")
+        else:
+            self._log(f"[generator] Using provided skill: {skill}")
 
         # ------------------------------------------------------------------
-        # STEP 4 + 5: Call Groq API + Validate output
+        # STEP 4: Build the prompt
+        # ------------------------------------------------------------------
+        self._log("\n[generator] Step 4 — Building prompt...")
+        messages = build_full_prompt(grade_band, ela_domain, theme, skill)
+
+        # ------------------------------------------------------------------
+        # STEP 5 + 6: Call Groq API + Validate output
         # Retries up to MAX_RETRIES times on ValidationError.
         # ------------------------------------------------------------------
-        self._log(f"\n[generator] Step 4 — Calling Groq API ({GROQ_MODEL})...")
+        self._log(f"\n[generator] Step 5 — Calling Groq API ({GROQ_MODEL})...")
 
         lesson = None
         last_error = None
@@ -196,8 +208,8 @@ class LessonGenerator:
                 raw_output = response.choices[0].message.content
                 self._log(f"[generator] Received response — {len(raw_output):,} chars")
 
-                # Step 5: Validate the response
-                self._log("\n[generator] Step 5 — Validating output...")
+                # Step 6: Validate the response
+                self._log("\n[generator] Step 6 — Validating output...")
                 lesson = validate_llm_output(raw_output)
 
                 # If we get here, validation passed
@@ -223,26 +235,26 @@ class LessonGenerator:
             )
 
         # ------------------------------------------------------------------
-        # STEP 6: Assign a guaranteed unique lesson ID
+        # STEP 7: Assign a guaranteed unique lesson ID
         # We never trust the LLM to generate the ID — it reuses numbers.
         # We generate it ourselves based on what already exists on disk.
         # ------------------------------------------------------------------
-        self._log("\n[generator] Step 6 — Assigning unique lesson ID...")
+        self._log("\n[generator] Step 7 — Assigning unique lesson ID...")
         lesson["lesson_id"] = self._generate_unique_id(grade_band, ela_domain)
         self._log(f"[generator] Assigned ID: {lesson['lesson_id']}")
 
         # ------------------------------------------------------------------
-        # STEP 7: Save the lesson to data/generated/
+        # STEP 8: Save the lesson to data/generated/
         # ------------------------------------------------------------------
-        self._log("[generator] Step 7 — Saving lesson...")
+        self._log("[generator] Step 8 — Saving lesson...")
         save_lesson(lesson)
 
         # ------------------------------------------------------------------
-        # STEP 8: Register the combo in the deduplication registry
+        # STEP 9: Register the combo in the deduplication registry
         # ------------------------------------------------------------------
-        self._log("[generator] Step 8 — Registering combo...")
+        self._log("[generator] Step 9 — Registering combo...")
         skill = lesson.get("metadata", {}).get("primary_skill", "unknown")
-        register_combo(theme, skill, grade_band, lesson["lesson_id"])
+        register_combo(theme, skill, grade_band, ela_domain, lesson["lesson_id"])
 
         # ------------------------------------------------------------------
         # DONE
@@ -307,15 +319,27 @@ class LessonGenerator:
         grade_band : str,
         ela_domain : str,
         theme      : str,
+        skill      : str = None,
     ) -> None:
         """
         Build and display the prompt without making an API call.
         Useful in notebooks for inspecting the prompt before generation.
 
+        If no skill is provided, auto-selects the next uncovered skill
+        from the taxonomy — same behaviour as generate().
+
         Args:
             grade_band : One of "K-2", "3-5", "6-8", "9-12"
             ela_domain : ELA domain string
             theme      : Theme string
+            skill      : Optional — skill string from taxonomy.
+                         If None, auto-selected from taxonomy.
         """
-        messages = build_full_prompt(grade_band, ela_domain, theme)
+        if skill is None:
+            skill = get_next_skill(grade_band, ela_domain)
+            print(f"[preview] Auto-selected skill: {skill}\n")
+        else:
+            print(f"[preview] Using provided skill: {skill}\n")
+
+        messages = build_full_prompt(grade_band, ela_domain, theme, skill)
         inspect_prompt(messages)

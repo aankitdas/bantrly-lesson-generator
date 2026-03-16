@@ -48,7 +48,7 @@ You must return a single valid JSON object with this exact structure:
     "ela_domain": "one of: Speaking | Listening | Reading | Writing | Reading → Speaking",
     "lesson_type": "one of: Story Retell | Mission Brief | Debate Drop | Text Explorer | Listen & Judge",
     "theme": "the theme you were given",
-    "primary_skill": "ONE specific measurable skill — no conjunctions like 'and' or '&'",
+    "primary_skill": "use the exact skill string you were given — do not modify it",
     "voice_markers": ["1 or 2 from: Pronunciation & Articulation | Prosody | Speaking Rate | Fluency & Fillers | Volume Control | Task Adherence"],
     "estimated_duration_minutes": integer between 4 and 10,
     "ccss_anchor": "the CCSS standard this lesson maps to",
@@ -179,24 +179,28 @@ OUTPUT FORMAT
 # USER PROMPT BUILDER
 # =============================================================================
 
-def build_user_prompt(grade_band: str, ela_domain: str, theme: str) -> str:
+def build_user_prompt(grade_band: str, ela_domain: str, theme: str, skill: str) -> str:
     """
     Build the user-turn prompt for a lesson generation request.
-    This is intentionally short — all the rules are in the system prompt.
 
     Args:
         grade_band: One of "K-2", "3-5", "6-8", "9-12"
         ela_domain: One of the valid ELA domains
         theme:      The lesson theme e.g. "Climate Change"
+        skill:      The exact skill from the taxonomy to target
 
     Returns:
         The user prompt string.
     """
     return (
         f"Generate a complete Bantrly lesson with the following parameters:\n\n"
-        f"  Grade Band : {grade_band}\n"
-        f"  ELA Domain : {ela_domain}\n"
-        f"  Theme      : {theme}\n\n"
+        f"  Grade Band     : {grade_band}\n"
+        f"  ELA Domain     : {ela_domain}\n"
+        f"  Theme          : {theme}\n"
+        f"  Primary Skill  : {skill}\n\n"
+        f"IMPORTANT: You must use the exact Primary Skill string above as the "
+        f"'primary_skill' field in your JSON. Do not modify, rephrase, or "
+        f"replace it. Build the entire lesson around this specific skill.\n\n"
         f"Follow all grade band rules and design principles exactly. "
         f"Return only the JSON object."
     )
@@ -212,6 +216,7 @@ def build_full_prompt(
     grade_band: str,
     ela_domain: str,
     theme:      str,
+    skill:      str,
 ) -> list[dict]:
     """
     Assemble the complete messages list for the Groq API call.
@@ -230,6 +235,7 @@ def build_full_prompt(
         grade_band: One of "K-2", "3-5", "6-8", "9-12"
         ela_domain: One of the valid ELA domains
         theme:      The lesson theme
+        skill:      The exact skill from the taxonomy to target
 
     Returns:
         A list of message dicts ready to pass to the Groq API.
@@ -255,7 +261,7 @@ def build_full_prompt(
     )
 
     # Part 3: the actual generation request
-    user_prompt = build_user_prompt(grade_band, ela_domain, theme)
+    user_prompt = build_user_prompt(grade_band, ela_domain, theme, skill)
 
     return [
         {"role": "system",    "content": system_prompt},
