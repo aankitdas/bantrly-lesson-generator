@@ -300,9 +300,10 @@ def format_lesson(lesson):
 
     # Reflect
     lines.append(f"### 🪞 Reflect")
-    lines.append(f"**Voice marker focus:** {flow['reflect']['voice_marker_focus']}")
-    lines.append(f"✅ {flow['reflect']['positive_signal']}")
-    lines.append(f"📈 {flow['reflect']['growth_signal']}")
+    reflect = flow.get('reflect', {})
+    lines.append(f"**Voice marker focus:** {reflect.get('voice_marker_focus', 'N/A')}")
+    lines.append(f"✅ {reflect.get('positive_signal', 'N/A')}")
+    lines.append(f"📈 {reflect.get('growth_signal', 'N/A')}")
     lines.append("")
 
     # Lesson ID
