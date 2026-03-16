@@ -97,7 +97,7 @@ def build_coverage_heatmap():
     cbar.set_ticklabels(["0%", "25%", "50%", "75%", "100%"])
 
     # Title
-    ax.set_title("Skill Coverage", fontsize=14, fontweight="bold",
+    ax.set_title("Skills targeted by the generated lessons", fontsize=14, fontweight="bold",
                  color="white", pad=16)
 
     plt.tight_layout()
@@ -280,6 +280,8 @@ def format_lesson(lesson):
     # Hook
     lines.append(f"### 🪝 Hook")
     lines.append(flow['hook']['content'])
+    if flow['hook'].get('learning_goal_connection'):
+        lines.append(f"*🔗 {flow['hook']['learning_goal_connection']}*")
     lines.append("")
 
     # Model
@@ -296,6 +298,8 @@ def format_lesson(lesson):
         lines.append(f"{p['text']}")
         if p.get('scaffold'):
             lines.append(f"*Scaffold: {p['scaffold']}*")
+        if p.get('learning_goal_connection'):
+            lines.append(f"*🔗 {p['learning_goal_connection']}*")
         lines.append("")
 
     # Reflect
@@ -304,6 +308,8 @@ def format_lesson(lesson):
     lines.append(f"**Voice marker focus:** {reflect.get('voice_marker_focus', 'N/A')}")
     lines.append(f"✅ {reflect.get('positive_signal', 'N/A')}")
     lines.append(f"📈 {reflect.get('growth_signal', 'N/A')}")
+    if reflect.get('learning_goal_connection'):
+        lines.append(f"*🔗 {reflect['learning_goal_connection']}*")
     lines.append("")
 
     # Lesson ID
@@ -392,7 +398,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         # =====================================================================
         with gr.Tab("Coverage Report"):
 
-            gr.Markdown("### Skill Coverage Heatmap")
+            gr.Markdown("### Skill Focus Heatmap")
             gr.Markdown("*Updates automatically after each generation. Green = fully covered, red = not started.*")
 
             heatmap_plot = gr.Plot(label="")

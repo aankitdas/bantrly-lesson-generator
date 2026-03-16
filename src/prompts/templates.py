@@ -57,7 +57,8 @@ You must return a single valid JSON object with this exact structure:
   "lesson_flow": {
     "hook": {
       "duration_seconds": integer,
-      "content": "the narrative scene-setting text"
+      "content": "the narrative scene-setting text",
+      "learning_goal_connection": "one sentence explaining how this hook sets up the primary skill and voice marker — ONLY include if ela_domain is Speaking or Reading → Speaking, otherwise omit this field"
     },
     "model": {
       "duration_seconds": integer,
@@ -69,13 +70,15 @@ You must return a single valid JSON object with this exact structure:
         "prompt_id": "P1",
         "type": "supported or independent",
         "text": "what the student is asked to say aloud",
-        "scaffold": "sentence starter if supported, or null if independent"
+        "scaffold": "sentence starter if supported, or null if independent",
+        "learning_goal_connection": "one sentence explaining how this prompt targets the primary skill and why the scaffold level (supported vs independent) connects to the voice marker — ONLY include if ela_domain is Speaking or Reading → Speaking, otherwise omit this field"
       },
       {
         "prompt_id": "P2",
         "type": "independent",
         "text": "a second speaking prompt, more challenging than P1",
-        "scaffold": null
+        "scaffold": null,
+        "learning_goal_connection": "one sentence explaining how this prompt targets the primary skill and why the scaffold level (supported vs independent) connects to the voice marker — ONLY include if ela_domain is Speaking or Reading → Speaking, otherwise omit this field"
       }
     ],
     "IMPORTANT — practice MUST be a JSON array [ ] not an object { }. Always use square brackets."
@@ -83,7 +86,8 @@ You must return a single valid JSON object with this exact structure:
       "duration_seconds": integer,
       "voice_marker_focus": "one voice marker from the list above",
       "positive_signal": "what strong performance sounds like",
-      "growth_signal": "one concrete thing to try next time"
+      "growth_signal": "one concrete thing to try next time",
+      "learning_goal_connection": "one sentence explaining how this reflection connects directly to the primary skill and voice marker — ONLY include if ela_domain is Speaking or Reading → Speaking, otherwise omit this field"
     }
   },
   "guardrail_flags": {
@@ -157,7 +161,14 @@ Every lesson you generate must follow these principles:
    but 'pause after each sequence word so your listener can follow.'
    (Hattie & Timperley, 2007 — feedback model)
 
-5. GRADE-APPROPRIATE COMPLEXITY: Follow the grade band rules below exactly.
+5. CONNECT COMPONENTS TO LEARNING GOALS: For Speaking and Reading → Speaking
+   lessons, every component — hook, each practice prompt, and reflect —
+   must include a learning_goal_connection field. This is one sentence
+   explaining how that component connects to the primary skill and voice
+   marker being practiced. This makes the design rationale visible to
+   teachers reviewing the lesson.
+
+6. GRADE-APPROPRIATE COMPLEXITY: Follow the grade band rules below exactly.
    Violating cognitive load rules is the most common lesson design failure.
    (Sweller, 1988 — Cognitive Load Theory)
 
