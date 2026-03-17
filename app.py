@@ -1038,7 +1038,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             () => {
                 setTimeout(() => {
                     window.dispatchEvent(new Event('resize'));
-                }, 500);
+                }, 1500);
             }
             """
         )
