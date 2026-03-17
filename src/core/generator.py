@@ -48,8 +48,10 @@ load_dotenv()
 # The Groq model we use for generation.
 # llama-3.3-70b-versatile is currently the best free-tier model
 # for instruction-following and structured JSON output on Groq.
-GROQ_MODEL = "llama-3.1-8b-instant" # "llama-3.3-70b-versatile" # "llama-3.1-8b-instant"
-
+# llama-3.1-8b-instant is faster and cheaper, but less powerful.
+GROQ_MODEL_70B = "llama-3.3-70b-versatile"
+GROQ_MODEL_8B  = "llama-3.1-8b-instant"
+GROQ_MODEL     = GROQ_MODEL_70B  # default
 # Generation parameters
 MAX_TOKENS   = 4096   # Enough for a complete lesson JSON
 TEMPERATURE  = 0.7    # Balance between creativity and consistency
@@ -103,7 +105,7 @@ class LessonGenerator:
 
         if self.verbose:
             print("[generator] LessonGenerator initialised ✅")
-            print(f"[generator] Model: {GROQ_MODEL}")
+            print(f"[generator] Model: {active_model}")
 
 
     def _log(self, message: str) -> None:
@@ -119,6 +121,7 @@ class LessonGenerator:
         theme      : str,
         skill      : str = None,
         skip_dedup : bool = False,
+        model      : str = None,
     ) -> dict:
         """
         Generate a complete, validated Bantrly lesson.
@@ -132,6 +135,8 @@ class LessonGenerator:
                          If None, the next skill in the domain will be selected.
             skip_dedup : If True, skip deduplication check.
                          Useful for testing. Default False.
+            model      : Optional. The Groq model to use.
+                         Defaults to "llama-3.3-70b-versatile".
 
         Returns:
             A validated lesson dict, saved to data/generated/.
@@ -141,6 +146,8 @@ class LessonGenerator:
             RuntimeError     : If all retries are exhausted without a valid lesson
             EnvironmentError : If GROQ_API_KEY is missing
         """
+        active_model = model if model else GROQ_MODEL
+        print(f"[generator] Model: {active_model}")
         self._log("\n" + "="*60)
         self._log(f"[generator] Starting lesson generation")
         self._log(f"[generator] Grade: {grade_band} | Domain: {ela_domain} | Theme: {theme}")
@@ -193,7 +200,7 @@ class LessonGenerator:
         # STEP 5 + 6: Call Groq API + Validate output
         # Retries up to MAX_RETRIES times on ValidationError.
         # ------------------------------------------------------------------
-        self._log(f"\n[generator] Step 5 — Calling Groq API ({GROQ_MODEL})...")
+        self._log(f"\n[generator] Step 5 — Calling Groq API ({active_model})...")
 
         lesson = None
         last_error = None
@@ -204,7 +211,7 @@ class LessonGenerator:
 
                 # Make the API call
                 response = self.client.chat.completions.create(
-                    model       = GROQ_MODEL,
+                    model       = active_model,
                     messages    = messages,
                     max_tokens  = MAX_TOKENS,
                     temperature = TEMPERATURE,

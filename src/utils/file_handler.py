@@ -30,7 +30,7 @@ Registry format (data/registry/registry.json):
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # =============================================================================
@@ -246,7 +246,7 @@ def register_combo(theme: str, skill: str, grade_band: str, ela_domain: str, les
         "grade_band":   grade_band,
         "ela_domain":   ela_domain,
         "lesson_id":    lesson_id,
-        "generated_at": datetime.utcnow().isoformat()
+        "generated_at": datetime.now(timezone.utc).isoformat()
     }
 
     registry["used_combinations"].append(entry)

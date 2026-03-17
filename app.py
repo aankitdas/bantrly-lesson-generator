@@ -2,7 +2,7 @@ import gradio as gr
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
@@ -20,6 +20,10 @@ gen = LessonGenerator(verbose=False)
 GRADE_BANDS = ["K-2", "3-5", "6-8", "9-12"]
 ELA_DOMAINS = ["Speaking", "Listening", "Reading", "Writing", "Reading → Speaking"]
 
+GROQ_MODELS = {
+    "llama-3.3-70b-versatile": "70B Versatile (recommended)",
+    "llama-3.1-8b-instant":    "8B Instant (faster, lower quality)",
+}
 
 def preview_skill(grade_band, ela_domain):
     """Called when grade band or domain changes — shows next skill."""
@@ -198,7 +202,12 @@ def build_taxonomy_browser(grade_band_sel):
     return "\n".join(lines)
 
 
-def generate_lesson(grade_band, ela_domain, theme, history, lessons):
+def generate_lesson(grade_band, ela_domain, theme, model_choice, history, lessons):
+    # Resolve display label back to model string
+    model_key = next(
+        (k for k, v in GROQ_MODELS.items() if v == model_choice),
+        "llama-3.3-70b-versatile"
+    )
     if not theme.strip():
         return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update()
 
@@ -206,7 +215,8 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
         lesson = gen.generate(
             grade_band=grade_band,
             ela_domain=ela_domain,
-            theme=theme.strip()
+            theme=theme.strip(),
+            model=model_key
         )
 
         formatted = format_lesson(lesson)
@@ -219,7 +229,7 @@ def generate_lesson(grade_band, ela_domain, theme, history, lessons):
             m["ela_domain"],
             m["primary_skill"][:50] + "...",
             m["theme"],
-            datetime.utcnow().strftime("%H:%M:%S"),
+            datetime.now(timezone.utc).strftime("%H:%M:%S"),
         ]
         updated_history = history + [new_row]
         updated_lessons = lessons + [lesson]
@@ -314,13 +324,13 @@ def format_lesson(lesson):
     else:
         reflect_data = reflect
     lines.append(f"**Voice marker focus:** {reflect.get('voice_marker_focus', 'N/A')}")
-    lines.append(f"✅ {reflect.get('positive_signal', 'N/A')}")
+    lines.append(f"✅ {reflect_data.get('positive_signal', 'N/A')}")
     lines.append("")
-    lines.append(f"📈 {reflect.get('growth_signal', 'N/A')}")
+    lines.append(f"📈 {reflect_data.get('growth_signal', 'N/A')}")
     lines.append("")
-    if reflect.get('learning_goal_connection'):
-        lines.append(f"*🔗 {reflect['learning_goal_connection']}*")
-
+    if reflect_data.get('learning_goal_connection'):
+        lines.append(f"🔗 *{reflect_data['learning_goal_connection']}*")
+    lines.append("")
     # Lesson ID
     lines.append(f"---")
     lines.append(f"*Lesson ID: {lesson['lesson_id']}*")
@@ -340,7 +350,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
     gr.Markdown("""
     # 📚 Bantrly Lesson Generator
-    Research-backed K–12 ELA lesson generation. Enter a grade band, domain, and theme — the system selects the next uncovered CCSS-aligned skill and generates a complete structured lesson.
+    Research-backed K–12 ELA lesson generation. Enter a grade band, domain, and theme. The system selects the next uncovered CCSS-aligned skill and generates a complete structured lesson.
     """)
 
     with gr.Tabs():
@@ -364,6 +374,11 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                         choices=ELA_DOMAINS,
                         value="Speaking",
                         label="ELA Domain",
+                    )
+                    model_choice = gr.Radio(
+                        choices=list(GROQ_MODELS.values()),
+                        value="70B Versatile (recommended)",
+                        label="Model",
                     )
 
                     theme = gr.Textbox(
@@ -483,7 +498,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
         gen_event = generate_btn.click(
             fn=generate_lesson,
-            inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+            inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
             outputs=[
             lesson_output,
             raw_json_output,
@@ -505,7 +520,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
         submit_event = theme.submit(
             fn=generate_lesson,
-            inputs=[grade_band, ela_domain, theme, history_state, lessons_state],
+            inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
             outputs=[
             lesson_output,
             raw_json_output,
