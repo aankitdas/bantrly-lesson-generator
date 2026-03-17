@@ -3,9 +3,7 @@ import json
 import os
 import sys
 from datetime import datetime, timezone
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import LinearSegmentedColormap
+import plotly.graph_objects as go
 
 
 # Ensure src/ is importable
@@ -39,72 +37,88 @@ def preview_skill(grade_band, ela_domain):
 DOMAINS = ["Speaking", "Listening", "Reading", "Writing"]
 
 def build_coverage_heatmap():
-    """Build a clean, styled coverage heatmap."""
-    data = []
+    """Build a clean modern coverage heatmap using Plotly."""
+    data       = []
+    text       = []
+    hover_text = []
+
     for band in GRADE_BANDS:
-        row = []
+        row       = []
+        text_row  = []
+        hover_row = []
         for domain in DOMAINS:
             report = get_coverage_report(band, domain)
-            pct = report["covered_count"] / report["total"] if report["total"] > 0 else 0
+            pct    = report["covered_count"] / report["total"] if report["total"] > 0 else 0
             row.append(pct)
+            text_row.append(f"{int(pct * 100)}%")
+            hover_row.append(
+                f"<b>{band} — {domain}</b><br>"
+                f"Covered: {report['covered_count']}/{report['total']}<br>"
+                f"Coverage: {int(pct * 100)}%"
+            )
         data.append(row)
+        text.append(text_row)
+        hover_text.append(hover_row)
 
-    data_np = np.array(data)
+    fig = go.Figure(data=go.Heatmap(
+        z=data,
+        x=DOMAINS,
+        y=GRADE_BANDS,
+        text=text,
+        texttemplate="%{text}",
+        textfont={"size": 14, "color": "white"},
+        hovertext=hover_text,
+        hoverinfo="text",
+        colorscale=[
+            [0.0,  "#c0392b"],   # 0%   — red
+            [0.25, "#e67e22"],   # 25%  — orange
+            [0.5,  "#f1c40f"],   # 50%  — yellow
+            [0.75, "#2ecc71"],   # 75%  — light green
+            [1.0,  "#27ae60"],   # 100% — full green
+        ],
+        zmin=0,
+        zmax=1,
+        showscale=True,
+        xgap=4,
+        ygap=4,
+        colorbar=dict(
+            title=dict(text="Coverage", font=dict(color="#e0e0e0", size=12)),
+            tickvals=[0, 0.25, 0.5, 0.75, 1.0],
+            ticktext=["0%", "25%", "50%", "75%", "100%"],
+            tickfont=dict(color="#e0e0e0", size=11),
+            outlinecolor="#333",
+            outlinewidth=1,
+            bgcolor="#1a1a2e",
+        ),
+    ))
 
-    fig, ax = plt.subplots(figsize=(9, 4))
-    fig.patch.set_facecolor("#0f1117")
-    ax.set_facecolor("#0f1117")
+    fig.update_layout(
+        paper_bgcolor="#0f1117",
+        plot_bgcolor="#0f1117",
+        font=dict(color="#e0e0e0", size=12),
+        margin=dict(l=60, r=60, t=40, b=40),
+        height=280,
+        xaxis=dict(
+            side="top",
+            tickfont=dict(size=12, color="#e0e0e0"),
+            tickangle=0,
+            showgrid=False,
+            showline=False,
+        ),
+        yaxis=dict(
+            tickfont=dict(size=12, color="#e0e0e0"),
+            showgrid=False,
+            showline=False,
+            autorange="reversed",
+        ),
+    )
+    fig.update_layout(
+        dragmode=False,
+    )
 
-    # Custom colormap — dark red → amber → green
-    colors = ["#3d0000", "#8b1a1a", "#e05c00", "#f0a500", "#2ecc71"]
-    from matplotlib.colors import LinearSegmentedColormap
-    cmap = LinearSegmentedColormap.from_list("bantrly", colors, N=256)
+    fig.layout.xaxis.fixedrange = True
+    fig.layout.yaxis.fixedrange = True
 
-    im = ax.imshow(data_np, cmap=cmap, vmin=0, vmax=1, aspect="auto")
-
-    # Cell annotations
-    for i in range(len(GRADE_BANDS)):
-        for j in range(len(DOMAINS)):
-            pct = data_np[i, j]
-            label = f"{int(pct * 100)}%"
-            color = "white" if pct < 0.6 else "#0f1117"
-            ax.text(j, i, label, ha="center", va="center",
-                    fontsize=13, fontweight="bold", color=color)
-
-    # Axis labels
-    ax.set_xticks(range(len(DOMAINS)))
-    ax.set_xticklabels(DOMAINS, fontsize=11, color="white", fontweight="bold")
-    ax.set_yticks(range(len(GRADE_BANDS)))
-    ax.set_yticklabels(GRADE_BANDS, fontsize=11, color="white", fontweight="bold")
-
-    # Move x labels to top
-    ax.xaxis.set_label_position("top")
-    ax.xaxis.tick_top()
-
-    # Remove spines
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-
-    # Grid lines between cells
-    ax.set_xticks(np.arange(len(DOMAINS)) - 0.5, minor=True)
-    ax.set_yticks(np.arange(len(GRADE_BANDS)) - 0.5, minor=True)
-    ax.grid(which="minor", color="#0f1117", linewidth=3)
-    ax.tick_params(which="minor", bottom=False, left=False)
-    ax.tick_params(which="major", bottom=False, left=False)
-
-    # Colorbar
-    cbar = plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02)
-    cbar.ax.yaxis.set_tick_params(color="white", labelsize=9)
-    cbar.outline.set_edgecolor("#0f1117")
-    plt.setp(cbar.ax.yaxis.get_ticklabels(), color="white")
-    cbar.set_ticks([0, 0.25, 0.5, 0.75, 1.0])
-    cbar.set_ticklabels(["0%", "25%", "50%", "75%", "100%"])
-
-    # Title
-    ax.set_title("Skills targeted by the generated lessons", fontsize=14, fontweight="bold",
-                 color="white", pad=16)
-
-    plt.tight_layout()
     return fig
 
 
