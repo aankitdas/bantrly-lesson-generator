@@ -245,16 +245,18 @@ def generate_lesson(grade_band, ela_domain, theme, model_choice, history, lesson
             preview_skill(m["grade_band"], m["ela_domain"]),
             build_taxonomy_browser(m["grade_band"]),
             build_skill_breakdown(m["grade_band"], m["ela_domain"]),
+            gr.update(visible=True), # launch button
+            lesson # demo lesson state
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -342,23 +344,285 @@ def format_lesson(lesson):
 # GRADIO UI
 # =============================================================================
 
+# Demo App State
+STEP_NAMES = ["Hook", "Skill", "Model", "Practice", "Reflect"]
+
+def get_grade_style(grade_band):
+    """Return tone config based on grade band."""
+    styles = {
+        "K-2": {
+            "ready":    "I'm Ready! 🚀",
+            "got_it":   "Got it! ⭐",
+            "my_turn":  "My Turn! 🎤",
+            "next":     "Next ➡️",
+            "done":     "Yay! 🎉 All Done!",
+            "restart":  "Try Another Lesson 🔄",
+            "emoji":    True,
+        },
+        "3-5": {
+            "ready":    "Let's Go! 🚀",
+            "got_it":   "Got it!",
+            "my_turn":  "My Turn!",
+            "next":     "Next →",
+            "done":     "Nice Work! ✅",
+            "restart":  "Try Another Lesson",
+            "emoji":    True,
+        },
+        "6-8": {
+            "ready":    "Ready",
+            "got_it":   "Understood",
+            "my_turn":  "My Response",
+            "next":     "Next",
+            "done":     "Done ✅",
+            "restart":  "Try Another Lesson",
+            "emoji":    False,
+        },
+        "9-12": {
+            "ready":    "Continue",
+            "got_it":   "Noted",
+            "my_turn":  "Respond",
+            "next":     "Next",
+            "done":     "Complete",
+            "restart":  "Try Another Lesson",
+            "emoji":    False,
+        },
+    }
+    return styles.get(grade_band, styles["6-8"])
+
+
+def build_progress_bar(current_step):
+    steps = STEP_NAMES
+    parts = []
+    for i, name in enumerate(steps):
+        if i < current_step:
+            parts.append(f"~~{name}~~")
+        elif i == current_step:
+            parts.append(f"**[ {name} ]**")
+        else:
+            parts.append(f"{name}")
+    bar    = " → ".join(parts)
+    total  = len(steps)
+    # Cap at 1.0 so step 5 shows 100% without division issues
+    ratio  = min(current_step / (total - 1), 1.0)
+    filled = int(ratio * 20)
+    visual = "█" * filled + "░" * (20 - filled)
+    return f"{bar}\n\n**{visual}** {int(ratio * 100)}%"
+
+
+def render_demo_step(lesson, step, practice_index=0):
+    """
+    Render the current demo step as markdown.
+    Returns (content_md, button_label, show_next, show_restart)
+    """
+    if lesson is None:
+        return "*No lesson loaded.*", "Start", False, False
+
+    flow  = lesson["lesson_flow"]
+    meta  = lesson["metadata"]
+    grade = meta["grade_band"]
+    style = get_grade_style(grade)
+
+    # Step 0 — Hook
+    if step == 0:
+        content = f"## 🪝 {meta['theme']}\n\n"
+        content += f"{flow['hook']['content']}"
+        return content, style["ready"], True, False, False
+
+    # Step 1 — Skill
+    elif step == 1:
+        skill = meta["primary_skill"]
+        content = f"## 🎯 Today's Skill\n\n"
+        if grade in ("K-2", "3-5"):
+            content += f"**We're going to practice:**\n\n> {skill}"
+        else:
+            content += f"**Learning objective:**\n\n> {skill}"
+        return content, style["got_it"], True, False, False
+
+    # Step 2 — Model
+    elif step == 2:
+        model  = flow["model"]
+        content = f"## 📖 Watch & Listen\n\n"
+        content += f"*{model['skill_named_explicitly']}*\n\n"
+        content += f"{model['content']}"
+        return content, style["my_turn"], True, False, False
+
+    # Step 3 — Practice
+    elif step == 3:
+        practice = flow["practice"]
+        if practice_index >= len(practice):
+            return render_demo_step(lesson, 4, 0)
+
+        p       = practice[practice_index]
+        total_p = len(practice)
+        content = f"## 🗣️ Your Turn ({practice_index + 1}/{total_p})\n\n"
+        content += f"{p['text']}\n\n"
+        if p.get("scaffold"):
+            content += f"> 💡 *{p['scaffold']}*\n\n"
+
+        is_last_prompt = practice_index >= total_p - 1
+        btn_label = style["next"] if not is_last_prompt else style["my_turn"]
+        show_finish = is_last_prompt
+        return content, btn_label, True, False, show_finish
+
+    # Step 4 — Reflect
+    elif step == 4:
+        reflect = flow.get("reflect", {})
+        if "feedback_anchors" in reflect:
+            reflect = reflect["feedback_anchors"]
+
+        content = f"## 🪞 Reflect\n\n"
+        vmf = reflect.get("voice_marker_focus", "")
+        if vmf:
+            content += f"**Voice focus:** {vmf}\n\n"
+        content += f"✅ {reflect.get('positive_signal', '')}\n\n"
+        content += f"📈 {reflect.get('growth_signal', '')}\n\n"
+        if reflect.get("learning_goal_connection"):
+            content += f"*🔗 {reflect['learning_goal_connection']}*"
+
+        return content, style["done"], False, False, True
+
+    return "*Unknown step.*", "Next", False, False, False
+
+
+def launch_demo(lesson):
+    """Called when Launch Student Experience button is clicked."""
+    if lesson is None:
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), 0, None, 0
+
+    content, btn_label, show_next, show_restart, show_finish = render_demo_step(lesson, 0)
+    progress = build_progress_bar(0)
+
+    return (
+        gr.update(selected=4),   # switch to Demo App tab (index 4)
+        progress,
+        content,
+        gr.update(value=btn_label, visible=show_next),
+        gr.update(visible=show_restart),
+        gr.update(visible=show_finish),
+        0,                       # demo_step_state
+        lesson,                  # demo_lesson_state
+        0,                       # practice_index_state
+    )
+
+
+def demo_next(lesson, step, practice_index):
+    """Advance to the next step or practice prompt."""
+    if lesson is None:
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), step, practice_index
+
+    practice = lesson["lesson_flow"]["practice"]
+
+    # If on practice step and more prompts remain — advance practice index
+    if step == 3 and practice_index < len(practice) - 1:
+        new_practice_index = practice_index + 1
+        content, btn_label, show_next, show_restart, show_finish = render_demo_step(
+            lesson, 3, new_practice_index
+        )
+        progress = build_progress_bar(3)
+        return (
+            progress,
+            content,
+            gr.update(value=btn_label, visible=show_next),
+            gr.update(visible=show_restart),
+            gr.update(visible=show_finish),
+            3,
+            new_practice_index,
+        )
+
+    # Otherwise advance to next main step
+    new_step = step + 1
+    new_practice_index = 0
+    content, btn_label, show_next, show_restart, show_finish = render_demo_step(
+        lesson, new_step, new_practice_index
+    )
+    progress = build_progress_bar(new_step)
+    return (
+        progress,
+        content,
+        gr.update(value=btn_label, visible=show_next),
+        gr.update(visible=show_restart),
+        gr.update(visible=show_finish),
+        new_step,
+        new_practice_index,
+    )
+
+
+def demo_restart():
+    """Reset demo and switch back to Generate tab."""
+    return (
+        gr.update(selected=0),  # switch back to Generate tab
+        "",                     # clear lesson output
+        gr.update(visible=False),  # hide launch button
+    )
+
+def demo_finish(lesson):
+    """Show congratulations and skill summary."""
+    if lesson is None:
+        return gr.update(), gr.update(), gr.update(), gr.update()
+
+    meta  = lesson["metadata"]
+    grade = meta["grade_band"]
+    style = get_grade_style(grade)
+
+    if grade == "K-2":
+        congrats = "# 🌟 Amazing Work!\n\nYou did it! Great job today!"
+    elif grade == "3-5":
+        congrats = "# 🎉 Well Done!\n\nFantastic effort today!"
+    elif grade == "6-8":
+        congrats = "# ✅ Lesson Complete!\n\nGreat work today."
+    else:
+        congrats = "# Lesson Complete\n\nWell done."
+
+    content  = congrats + "\n\n---\n\n"
+    content += f"## 📋 What You Practiced\n\n"
+    content += f"**Skill:** {meta['primary_skill']}\n\n"
+
+    if meta.get("voice_markers"):
+        content += f"**Voice focus:** {', '.join(meta['voice_markers'])}\n\n"
+
+    content += f"**Lesson:** {meta['theme']} · {meta['grade_band']} · {meta['ela_domain']}\n\n"
+    content += f"*{meta.get('ccss_anchor', '')}*\n\n"
+    content += "---\n\n"
+
+    if grade in ("K-2", "3-5"):
+        content += "⭐ Keep practicing — you're getting better every time!"
+    elif grade in ("6-8",):
+        content += "Keep practicing this skill — consistency builds fluency."
+    else:
+        content += "Continued practice will strengthen both skill and delivery."
+
+    progress = build_progress_bar(5)
+
+    return (
+        progress,
+        content,
+        gr.update(visible=False),   # hide next btn
+        gr.update(visible=False),   # hide finish btn
+        gr.update(visible=True),    # show restart btn
+    )
+
 with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
     # In-memory session state for generation history
     history_state = gr.State([])
     lessons_state = gr.State([])
 
+    active_tab_state  = gr.State(0)
+    demo_lesson_state = gr.State(None)
+    demo_step_state   = gr.State(0)
+    practice_index_state = gr.State(0)
+
     gr.Markdown("""
     # 📚 Bantrly Lesson Generator
     Research-backed K–12 ELA lesson generation. Enter a grade band, domain, and theme. The system selects the next uncovered CCSS-aligned skill and generates a complete structured lesson.
     """)
 
-    with gr.Tabs():
+    with gr.Tabs() as tabs:
 
         # =====================================================================
         # TAB 1 — GENERATE
         # =====================================================================
-        with gr.Tab("Generate"):
+        with gr.Tab("Generate", id=0):
             with gr.Row():
                 with gr.Column(scale=1):
 
@@ -395,11 +659,16 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                 with gr.Column(scale=2):
                     gr.Markdown("### Generated Lesson")
                     lesson_output = gr.Markdown(value="*Your lesson will appear here.*")
+                    launch_btn = gr.Button(
+                        "▶ Launch Student Experience",
+                        variant="primary",
+                        visible=False,
+                    )
 
         # =====================================================================
         # TAB 2 — RAW JSON + HISTORY
         # =====================================================================
-        with gr.Tab("Raw JSON & History"):
+        with gr.Tab("Raw JSON & History", id=1):
 
             gr.Markdown("### Last Generated Lesson — Raw JSON")
             raw_json_output = gr.Code(
@@ -421,7 +690,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         # =====================================================================
         # TAB 3 — COVERAGE HEATMAP
         # =====================================================================
-        with gr.Tab("Coverage Report"):
+        with gr.Tab("Coverage Report", id=2):
 
             gr.Markdown("### Skill Focus Heatmap")
             gr.Markdown("*Updates automatically after each generation. Green = fully covered, red = not started.*")
@@ -448,7 +717,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         # =====================================================================
         # TAB 4 — GUARDRAIL INSPECTOR
         # =====================================================================
-        with gr.Tab("Guardrail Inspector"):
+        with gr.Tab("Guardrail Inspector", id=3):
             gr.Markdown("""
             ### Guardrail Inspector
             Shows the 4 post-generation checks run on every lesson.
@@ -460,10 +729,26 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             guardrail_output = gr.Markdown(
                 value="*Generate a lesson to see guardrail results.*"
             )
+
         # =====================================================================
-        # TAB 5 — SKILL TAXONOMY BROWSER
+        # TAB 5 — DEMO APP (Student Experience)
         # =====================================================================
-        with gr.Tab("Skill Taxonomy"):
+        with gr.Tab("▶ Student Experience", id=4):
+
+            gr.Markdown("### Student Lesson Experience")
+            gr.Markdown("*Navigate through the lesson step by step.*")
+
+            demo_progress   = gr.Markdown(value="")
+            demo_content    = gr.Markdown(value="*Generate a lesson first, then click Launch Student Experience.*")
+
+            with gr.Row():
+                demo_next_btn    = gr.Button("Next", variant="primary", visible=False)
+                demo_restart_btn = gr.Button("Try Another Lesson", variant="secondary", visible=False)
+                demo_finish_btn  = gr.Button("🎓 Finish Lesson", variant="primary", visible=False)
+        # =====================================================================
+        # TAB 6 — SKILL TAXONOMY BROWSER
+        # =====================================================================
+        with gr.Tab("Skill Taxonomy", id=5):
 
             gr.Markdown("""
             ### Skill Taxonomy Browser
@@ -481,104 +766,158 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
             taxonomy_output = gr.Markdown(value="")
         
-        # =========================================================================
-        # EVENT HANDLERS
-        # =========================================================================
+    # =========================================================================
+    # EVENT HANDLERS
+    # =========================================================================
 
-        grade_band.change(
-            fn=preview_skill,
-            inputs=[grade_band, ela_domain],
-            outputs=skill_preview,
-        )
-        ela_domain.change(
-            fn=preview_skill,
-            inputs=[grade_band, ela_domain],
-            outputs=skill_preview,
-        )
+    grade_band.change(
+        fn=preview_skill,
+        inputs=[grade_band, ela_domain],
+        outputs=skill_preview,
+    )
+    ela_domain.change(
+        fn=preview_skill,
+        inputs=[grade_band, ela_domain],
+        outputs=skill_preview,
+    )
 
-        gen_event = generate_btn.click(
-            fn=generate_lesson,
-            inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
-            outputs=[
-            lesson_output,
-            raw_json_output,
-            history_state,
-            history_table,
-            lessons_state,
-            heatmap_plot,
-            guardrail_output,
-            skill_preview,
-            taxonomy_output,
-            skill_breakdown_output,
+    gen_event = generate_btn.click(
+        fn=generate_lesson,
+        inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
+        outputs=[
+        lesson_output,
+        raw_json_output,
+        history_state,
+        history_table,
+        lessons_state,
+        heatmap_plot,
+        guardrail_output,
+        skill_preview,
+        taxonomy_output,
+        skill_breakdown_output,
+        launch_btn,
+        demo_lesson_state,
+    ],
+    )
+
+    submit_event = theme.submit(
+        fn=generate_lesson,
+        inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
+        outputs=[
+        lesson_output,
+        raw_json_output,
+        history_state,
+        history_table,
+        lessons_state,
+        heatmap_plot,
+        guardrail_output,
+        skill_preview,
+        taxonomy_output,
+        skill_breakdown_output,
+        launch_btn,
+        demo_lesson_state,
+    ],
+    )
+    stop_btn.click(
+        fn=None,
+        cancels=[gen_event, submit_event],
+    )
+
+    breakdown_grade.change(
+        fn=build_skill_breakdown,
+        inputs=[breakdown_grade, breakdown_domain],
+        outputs=skill_breakdown_output,
+    )
+    breakdown_domain.change(
+        fn=build_skill_breakdown,
+        inputs=[breakdown_grade, breakdown_domain],
+        outputs=skill_breakdown_output,
+    )
+
+    history_table.select(
+        fn=select_lesson_json,
+        inputs=[lessons_state],
+        outputs=raw_json_output,
+    )
+
+    taxonomy_grade.change(
+        fn=build_taxonomy_browser,
+        inputs=[taxonomy_grade],
+        outputs=taxonomy_output,
+    )
+
+    demo.load(
+        fn=build_coverage_heatmap,
+        outputs=heatmap_plot,
+    )
+    demo.load(
+        fn=build_skill_breakdown,
+        inputs=[breakdown_grade, breakdown_domain],
+        outputs=skill_breakdown_output,
+    )
+    demo.load(
+        fn=lambda: "*Generate a lesson to see guardrail results.*",
+        outputs=guardrail_output,
+    )
+    demo.load(
+        fn=build_taxonomy_browser,
+        inputs=[taxonomy_grade],
+        outputs=taxonomy_output,
+    )
+    demo.load(
+        fn=preview_skill,
+        inputs=[grade_band, ela_domain],
+        outputs=skill_preview,
+    )
+
+    launch_btn.click(
+    fn=launch_demo,
+    inputs=[demo_lesson_state],
+    outputs=[
+        tabs,
+        demo_progress,
+        demo_content,
+        demo_next_btn,
+        demo_restart_btn,
+        demo_finish_btn,
+        demo_step_state,
+        demo_lesson_state,
+        practice_index_state,
+    ],
+    )
+
+    demo_next_btn.click(
+        fn=demo_next,
+        inputs=[demo_lesson_state, demo_step_state, practice_index_state],
+        outputs=[
+            demo_progress,
+            demo_content,
+            demo_next_btn,
+            demo_restart_btn,
+            demo_finish_btn,
+            demo_step_state,
+            practice_index_state,
         ],
-        )
-
-        stop_btn.click(
-            fn=None,
-            cancels=[gen_event],
-        )
-
-        submit_event = theme.submit(
-            fn=generate_lesson,
-            inputs=[grade_band, ela_domain, theme, model_choice, history_state, lessons_state],
-            outputs=[
-            lesson_output,
-            raw_json_output,
-            history_state,
-            history_table,
-            lessons_state,
-            heatmap_plot,
-            guardrail_output,
-            skill_preview,
-            taxonomy_output,
-            skill_breakdown_output,
+    )
+    demo_finish_btn.click(
+        fn=demo_finish,
+        inputs=[demo_lesson_state],
+        outputs=[
+            demo_progress,
+            demo_content,
+            demo_next_btn,
+            demo_finish_btn,
+            demo_restart_btn,
         ],
-        )
-        stop_btn.click(
-            fn=None,
-            cancels=[gen_event, submit_event],
-        )
+    )
 
-        breakdown_grade.change(
-            fn=build_skill_breakdown,
-            inputs=[breakdown_grade, breakdown_domain],
-            outputs=skill_breakdown_output,
-        )
-        breakdown_domain.change(
-            fn=build_skill_breakdown,
-            inputs=[breakdown_grade, breakdown_domain],
-            outputs=skill_breakdown_output,
-        )
-
-        history_table.select(
-            fn=select_lesson_json,
-            inputs=[lessons_state],
-            outputs=raw_json_output,
-        )
-
-        taxonomy_grade.change(
-            fn=build_taxonomy_browser,
-            inputs=[taxonomy_grade],
-            outputs=taxonomy_output,
-        )
-
-        demo.load(
-            fn=build_coverage_heatmap,
-            outputs=heatmap_plot,
-        )
-        demo.load(
-            fn=build_skill_breakdown,
-            inputs=[breakdown_grade, breakdown_domain],
-            outputs=skill_breakdown_output,
-        )
-        demo.load(
-            fn=lambda: "*Generate a lesson to see guardrail results.*",
-            outputs=guardrail_output,
-        )
-        demo.load(
-            fn=build_taxonomy_browser,
-            inputs=[taxonomy_grade],
-            outputs=taxonomy_output,
-        )
+    demo_restart_btn.click(
+        fn=demo_restart,
+        outputs=[
+            tabs,
+            lesson_output,
+            launch_btn,
+        ],
+    )
 
 demo.launch()
