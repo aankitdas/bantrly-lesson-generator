@@ -1032,14 +1032,14 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             launch_btn,
         ],
     )
-demo.load(
-        fn=None,
-        js="""
-        () => {
-            setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-            }, 500);
-        }
-        """
-    )
+    demo.load(
+            fn=None,
+            js="""
+            () => {
+                setTimeout(() => {
+                    window.dispatchEvent(new Event('resize'));
+                }, 500);
+            }
+            """
+        )
 demo.launch()
