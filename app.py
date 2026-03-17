@@ -168,38 +168,122 @@ def build_guardrail_display(lesson):
 
 # build taxonomy browser
 def build_taxonomy_browser(grade_band_sel):
-    """Show full skill taxonomy for a grade band with coverage indicators."""
-    lines = []
-    lines.append(f"## {grade_band_sel} Skill Taxonomy")
-    lines.append("")
-
-    for domain in DOMAINS:
-        report = get_coverage_report(grade_band_sel, domain)
-        covered_set = set(s.lower() for s in report["covered"])
-
-        lines.append(f"### {domain} — {report['covered_count']}/{report['total']} covered")
-        lines.append("")
-        for skill in report["covered"] + report["remaining"]:
-            icon = "✅" if skill.lower() in covered_set else "⬜"
-            lines.append(f"{icon} {skill}")
-            lines.append("")
-        lines.append("")
-
-    # Also show Reading → Speaking interleaved
+    """Show full skill taxonomy as a responsive CSS grid."""
     from src.core.skill_selector import get_skills_for
-    interleaved = get_skills_for(grade_band_sel, "Reading → Speaking")
-    rds_report  = get_coverage_report(grade_band_sel, "Reading → Speaking")
-    covered_set = set(s.lower() for s in rds_report["covered"])
 
-    lines.append(f"### Reading → Speaking (interleaved) — {rds_report['covered_count']}/{rds_report['total']} covered")
-    lines.append("")
-    for skill in interleaved:
-        icon = "✅" if skill.lower() in covered_set else "⬜"
-        lines.append(f"{icon} {skill}")
-        lines.append("")
-    lines.append("")
+    domains_to_show = DOMAINS + ["Reading → Speaking"]
+    cards = []
 
-    return "\n".join(lines)
+    for domain in domains_to_show:
+        if domain == "Reading → Speaking":
+            all_skills = get_skills_for(grade_band_sel, "Reading → Speaking")
+            report     = get_coverage_report(grade_band_sel, "Reading → Speaking")
+        else:
+            report     = get_coverage_report(grade_band_sel, domain)
+            all_skills = report["covered"] + report["remaining"]
+
+        covered_set   = set(s.lower() for s in report["covered"])
+        covered_count = report["covered_count"]
+        total         = report["total"]
+        pct           = int((covered_count / total) * 100) if total > 0 else 0
+
+        # Progress bar color
+        if pct == 0:
+            bar_color = "#e05c00"
+        elif pct == 100:
+            bar_color = "#2ecc71"
+        else:
+            bar_color = "#f0a500"
+
+        # Skill rows
+        skill_rows = ""
+        for i, skill in enumerate(all_skills, 1):
+            icon   = "✅" if skill.lower() in covered_set else "⬜"
+            skill_rows += f"""
+            <div style="
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 6px 0;
+                border-bottom: 1px solid #2a2a2a;
+                font-size: 13px;
+                line-height: 1.4;
+            ">
+                <span style="min-width: 20px; color: #888;">{i}.</span>
+                <span style="flex: 1; color: #e0e0e0;">{skill}</span>
+                <span>{icon}</span>
+            </div>
+            """
+
+        card = f"""
+        <div style="
+            background: #1a1a2e;
+            border: 1px solid #2a2a3e;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        ">
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <span style="
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #a78bfa;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                ">{domain}</span>
+                <span style="
+                    font-size: 12px;
+                    color: #888;
+                ">{covered_count}/{total}</span>
+            </div>
+
+            <div style="
+                background: #2a2a3e;
+                border-radius: 999px;
+                height: 6px;
+                overflow: hidden;
+            ">
+                <div style="
+                    width: {pct}%;
+                    height: 100%;
+                    background: {bar_color};
+                    border-radius: 999px;
+                    transition: width 0.3s ease;
+                "></div>
+            </div>
+
+            <div>{skill_rows}</div>
+        </div>
+        """
+        cards.append(card)
+
+    cards_html = "\n".join(cards)
+
+    html = f"""
+    <div style="padding: 8px 0;">
+        <h2 style="
+            color: #e0e0e0;
+            font-size: 18px;
+            margin-bottom: 16px;
+        ">{grade_band_sel} — Skill Taxonomy</h2>
+
+        <div style="
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        ">
+            {cards_html}
+        </div>
+    </div>
+    """
+
+    return html
 
 
 def generate_lesson(grade_band, ela_domain, theme, model_choice, history, lessons):
@@ -764,7 +848,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
                 label="Grade Band",
             )
 
-            taxonomy_output = gr.Markdown(value="")
+            taxonomy_output = gr.HTML(value="")
         
     # =========================================================================
     # EVENT HANDLERS
