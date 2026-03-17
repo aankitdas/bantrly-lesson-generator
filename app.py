@@ -98,18 +98,23 @@ def build_coverage_heatmap():
         font=dict(color="#e0e0e0", size=12),
         margin=dict(l=60, r=60, t=40, b=40),
         height=280,
+        autosize=True,
+        dragmode=False,
+        modebar=dict(remove=["zoom", "pan", "select", "lasso", "zoomIn", "zoomOut", "autoScale", "resetScale", "toImage"]),
         xaxis=dict(
             side="top",
             tickfont=dict(size=12, color="#e0e0e0"),
             tickangle=0,
             showgrid=False,
             showline=False,
+            fixedrange=True,
         ),
         yaxis=dict(
             tickfont=dict(size=12, color="#e0e0e0"),
             showgrid=False,
             showline=False,
             autorange="reversed",
+            fixedrange=True,
         ),
     )
     fig.update_layout(
@@ -796,7 +801,8 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             gr.Markdown("### Skill Focus Heatmap")
             gr.Markdown("*Updates automatically after each generation. Green = fully covered, red = not started.*")
 
-            heatmap_plot = gr.Plot(label="")
+            with gr.Column(scale=1):
+                heatmap_plot = gr.Plot(label="", show_label=False)
 
             gr.Markdown("### Skill Breakdown")
             gr.Markdown("Select a grade band and domain to see covered and remaining skills.")
