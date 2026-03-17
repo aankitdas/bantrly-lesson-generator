@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 sys.path.insert(0, os.path.dirname(__file__))
 
 from src.core.generator import LessonGenerator
-from src.core.skill_selector import get_next_skill, get_coverage_report
+from src.core.skill_selector import get_next_skill, get_coverage_report, get_skills_for
 
 # Initialise generator once at startup
 gen = LessonGenerator(verbose=False)
@@ -98,17 +98,21 @@ def build_coverage_heatmap():
         font=dict(color="#e0e0e0", size=12),
         margin=dict(l=60, r=60, t=40, b=40),
         height=280,
+        dragmode=False,
+        modebar=dict(remove=["zoom", "pan", "select", "lasso", "zoomIn", "zoomOut", "autoScale", "resetScale", "toImage"]),
         xaxis=dict(
             side="top",
             tickfont=dict(size=12, color="#e0e0e0"),
             tickangle=0,
             showgrid=False,
             showline=False,
+            fixedrange=True,
         ),
         yaxis=dict(
             tickfont=dict(size=12, color="#e0e0e0"),
             showgrid=False,
             showline=False,
+            fixedrange=True,
             autorange="reversed",
         ),
     )
@@ -182,7 +186,6 @@ def build_taxonomy_browser(grade_band_sel):
     """Show full skill taxonomy as a responsive CSS grid."""
     if not grade_band_sel:
         return "<p style='color:#888; padding:8px;'>Select a grade band above.</p>"
-    from src.core.skill_selector import get_skills_for
 
     domains_to_show = DOMAINS + ["Reading → Speaking"]
     cards = []
@@ -355,9 +358,7 @@ def generate_lesson(grade_band, ela_domain, theme, model_choice, history, lesson
         return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
     except Exception as e:
         return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
-    if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
-
+    
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
     if not lessons or evt.index[0] >= len(lessons):
@@ -425,7 +426,7 @@ def format_lesson(lesson):
         reflect_data = reflect['feedback_anchors']
     else:
         reflect_data = reflect
-    lines.append(f"**Voice marker focus:** {reflect.get('voice_marker_focus', 'N/A')}")
+    lines.append(f"**Voice marker focus:** {reflect_data.get('voice_marker_focus', 'N/A')}")
     lines.append(f"✅ {reflect_data.get('positive_signal', 'N/A')}")
     lines.append("")
     lines.append(f"📈 {reflect_data.get('growth_signal', 'N/A')}")
@@ -512,10 +513,10 @@ def build_progress_bar(current_step):
 def render_demo_step(lesson, step, practice_index=0):
     """
     Render the current demo step as markdown.
-    Returns (content_md, button_label, show_next, show_restart)
+    Returns (content_md, button_label, show_next, show_restart, show_finish)
     """
     if lesson is None:
-        return "*No lesson loaded.*", "Start", False, False
+        return "*No lesson loaded.*", "Start", False, False, False
 
     flow  = lesson["lesson_flow"]
     meta  = lesson["metadata"]
@@ -658,7 +659,7 @@ def demo_restart():
 def demo_finish(lesson):
     """Show congratulations and skill summary."""
     if lesson is None:
-        return gr.update(), gr.update(), gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
 
     meta  = lesson["metadata"]
     grade = meta["grade_band"]
@@ -707,7 +708,6 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
     history_state = gr.State([])
     lessons_state = gr.State([])
 
-    active_tab_state  = gr.State(0)
     demo_lesson_state = gr.State(None)
     demo_step_state   = gr.State(0)
     practice_index_state = gr.State(0)
@@ -956,11 +956,6 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
     demo.load(
         fn=build_coverage_heatmap,
         outputs=heatmap_plot,
-    )
-    
-    demo.load(
-        fn=lambda: "*Generate a lesson to see guardrail results.*",
-        outputs=guardrail_output,
     )
     
     demo.load(
