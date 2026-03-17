@@ -330,17 +330,20 @@ def generate_lesson(grade_band, ela_domain, theme, model_choice, history, lesson
             build_taxonomy_browser(m["grade_band"]),
             build_skill_breakdown(m["grade_band"], m["ela_domain"]),
             gr.update(visible=True), # launch button
-            lesson # demo lesson state
+            lesson, # demo lesson state
+            gr.update(value=m["grade_band"]),    # sync breakdown_grade
+            gr.update(value=m["ela_domain"] if m["ela_domain"] in DOMAINS else "Speaking"),  # sync breakdown_domain
+            gr.update(value=m["grade_band"]), # sync taxonomy_grade
         )
 
     except ValueError as e:
-        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
+        return f"⚠️ Input error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
     except RuntimeError as e:
-        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
+        return f"⚠️ Generation failed: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
     except Exception as e:
-        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
+        return f"⚠️ Unexpected error: {e}", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
     if not theme.strip():
-        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None
+        return "⚠️ Please enter a theme.", "", history, history, lessons, gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update(visible=False), None, gr.update(), gr.update(), gr.update()
 
 def select_lesson_json(evt: gr.SelectData, lessons):
     """Called when a row is clicked in the history table."""
@@ -787,12 +790,12 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             with gr.Row():
                 breakdown_grade  = gr.Radio(
                     choices=GRADE_BANDS,
-                    value="3-5",
+                    value=None,
                     label="Grade Band",
                 )
                 breakdown_domain = gr.Radio(
                     choices=DOMAINS,
-                    value="Speaking",
+                    value=None,
                     label="ELA Domain",
                 )
 
@@ -844,7 +847,7 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
 
             taxonomy_grade = gr.Radio(
                 choices=GRADE_BANDS,
-                value="3-5",
+                value=None,
                 label="Grade Band",
             )
 
@@ -881,6 +884,9 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         skill_breakdown_output,
         launch_btn,
         demo_lesson_state,
+        breakdown_grade,     # sync to generated lesson
+        breakdown_domain,    # sync to generated lesson
+        taxonomy_grade,      # sync to generated lesson
     ],
     )
 
@@ -900,6 +906,9 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         skill_breakdown_output,
         launch_btn,
         demo_lesson_state,
+        breakdown_grade,     # sync to generated lesson
+        breakdown_domain,    # sync to generated lesson
+        taxonomy_grade,      # sync to generated lesson
     ],
     )
     stop_btn.click(
