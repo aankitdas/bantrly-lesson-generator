@@ -98,37 +98,29 @@ def build_coverage_heatmap():
         font=dict(color="#e0e0e0", size=12),
         margin=dict(l=60, r=60, t=40, b=40),
         height=280,
-        autosize=True,
-        dragmode=False,
-        modebar=dict(remove=["zoom", "pan", "select", "lasso", "zoomIn", "zoomOut", "autoScale", "resetScale", "toImage"]),
         xaxis=dict(
             side="top",
             tickfont=dict(size=12, color="#e0e0e0"),
             tickangle=0,
             showgrid=False,
             showline=False,
-            fixedrange=True,
         ),
         yaxis=dict(
             tickfont=dict(size=12, color="#e0e0e0"),
             showgrid=False,
             showline=False,
             autorange="reversed",
-            fixedrange=True,
         ),
     )
-    fig.update_layout(
-        dragmode=False,
-    )
-
-    fig.layout.xaxis.fixedrange = True
-    fig.layout.yaxis.fixedrange = True
 
     return fig
 
 
 def build_skill_breakdown(grade_band_sel, domain_sel):
     """Return a markdown skill breakdown for a selected band + domain."""
+
+    if not grade_band_sel or not domain_sel:
+        return "*Select a grade band and domain above.*"
     report = get_coverage_report(grade_band_sel, domain_sel)
 
     lines = []
@@ -188,6 +180,8 @@ def build_guardrail_display(lesson):
 # build taxonomy browser
 def build_taxonomy_browser(grade_band_sel):
     """Show full skill taxonomy as a responsive CSS grid."""
+    if not grade_band_sel:
+        return "<p style='color:#888; padding:8px;'>Select a grade band above.</p>"
     from src.core.skill_selector import get_skills_for
 
     domains_to_show = DOMAINS + ["Reading → Speaking"]
@@ -963,20 +957,12 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
         fn=build_coverage_heatmap,
         outputs=heatmap_plot,
     )
-    demo.load(
-        fn=build_skill_breakdown,
-        inputs=[breakdown_grade, breakdown_domain],
-        outputs=skill_breakdown_output,
-    )
+    
     demo.load(
         fn=lambda: "*Generate a lesson to see guardrail results.*",
         outputs=guardrail_output,
     )
-    demo.load(
-        fn=build_taxonomy_browser,
-        inputs=[taxonomy_grade],
-        outputs=taxonomy_output,
-    )
+    
     demo.load(
         fn=preview_skill,
         inputs=[grade_band, ela_domain],
@@ -1032,14 +1018,5 @@ with gr.Blocks(title="Bantrly Lesson Generator") as demo:
             launch_btn,
         ],
     )
-    demo.load(
-            fn=None,
-            js="""
-            () => {
-                setTimeout(() => {
-                    window.dispatchEvent(new Event('resize'));
-                }, 1500);
-            }
-            """
-        )
+    
 demo.launch()
