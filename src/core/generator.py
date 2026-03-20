@@ -105,7 +105,7 @@ class LessonGenerator:
 
         if self.verbose:
             print("[generator] LessonGenerator initialised ✅")
-            print(f"[generator] Model: {active_model}")
+            print(f"[generator] Model: {GROQ_MODEL}")
 
 
     def _log(self, message: str) -> None:
@@ -197,54 +197,75 @@ class LessonGenerator:
             self._log(f"[generator] Prompt built — {total_chars:,} chars (~{total_chars//4:,} tokens)")
 
         # ------------------------------------------------------------------
-        # STEP 5 + 6: Call Groq API + Validate output
-        # Retries up to MAX_RETRIES times on ValidationError.
+        # STEP 5 + 6: Call Groq API + Validate + Cultural bias check
+        # Outer loop: retries on cultural bias (max MAX_BIAS_RETRIES)
+        # Inner loop: retries on validation failure (max MAX_RETRIES)
         # ------------------------------------------------------------------
         self._log(f"\n[generator] Step 5 — Calling Groq API ({active_model})...")
 
-        lesson = None
+        lesson     = None
         last_error = None
 
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                self._log(f"[generator] Attempt {attempt}/{MAX_RETRIES}...")
+        for bias_attempt in range(1, MAX_BIAS_RETRIES + 1):
 
-                # Make the API call
-                response = self.client.chat.completions.create(
-                    model       = active_model,
-                    messages    = messages,
-                    max_tokens  = MAX_TOKENS,
-                    temperature = TEMPERATURE,
-                )
+            if bias_attempt > 1:
+                self._log(f"\n[generator] Bias retry {bias_attempt}/{MAX_BIAS_RETRIES} — rebuilding prompt with warning...")
+                messages = build_full_prompt(grade_band, ela_domain, theme, skill, bias_warning)
 
-                raw_output = response.choices[0].message.content
-                self._log(f"[generator] Received response — {len(raw_output):,} chars")
+            # Inner loop — validation retries
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    self._log(f"[generator] Attempt {attempt}/{MAX_RETRIES}...")
 
-                # Step 6: Validate the response
-                self._log("\n[generator] Step 6 — Validating output...")
-                lesson = validate_llm_output(raw_output)
+                    response = self.client.chat.completions.create(
+                        model       = active_model,
+                        messages    = messages,
+                        max_tokens  = MAX_TOKENS,
+                        temperature = TEMPERATURE,
+                    )
 
-                # If we get here, validation passed
-                break
+                    raw_output = response.choices[0].message.content
+                    self._log(f"[generator] Received response — {len(raw_output):,} chars")
 
-            except ValidationError as e:
-                last_error = e
-                self._log(f"[generator] ⚠️  Validation failed on attempt {attempt}: {e}")
-                if attempt < MAX_RETRIES:
-                    self._log(f"[generator] Retrying in {RETRY_DELAY}s...")
-                    time.sleep(RETRY_DELAY)
+                    self._log("\n[generator] Step 6 — Validating output...")
+                    lesson = validate_llm_output(raw_output)
+                    break
 
-            except Exception as e:
-                # Unexpected errors (network, API errors) — re-raise immediately
+                except ValidationError as e:
+                    last_error = e
+                    self._log(f"[generator] ⚠️  Validation failed on attempt {attempt}: {e}")
+                    if attempt < MAX_RETRIES:
+                        self._log(f"[generator] Retrying in {RETRY_DELAY}s...")
+                        time.sleep(RETRY_DELAY)
+
+                except Exception as e:
+                    raise RuntimeError(
+                        f"[generator] Groq API call failed: {type(e).__name__}: {e}"
+                    )
+
+            if lesson is None:
                 raise RuntimeError(
-                    f"[generator] Groq API call failed: {type(e).__name__}: {e}"
+                    f"[generator] All {MAX_RETRIES} validation attempts failed. "
+                    f"Last error: {last_error}"
                 )
 
-        if lesson is None:
-            raise RuntimeError(
-                f"[generator] All {MAX_RETRIES} attempts failed. "
-                f"Last error: {last_error}"
-            )
+            # Cultural bias check on validated lesson
+            bias_result = check_cultural_bias(lesson)
+
+            if bias_result.passed():
+                self._log("[generator] ✅ Cultural bias check passed.")
+                break
+            else:
+                bias_warning = bias_result.flagged_terms or []
+                self._log(f"[generator] ⚠️  Cultural bias detected: {bias_warning}")
+                if bias_attempt < MAX_BIAS_RETRIES:
+                    self._log(f"[generator] Regenerating with bias warning...")
+                    lesson = None
+                else:
+                    raise RuntimeError(
+                        f"[generator] Cultural bias check failed after {MAX_BIAS_RETRIES} attempts. "
+                        f"Flagged terms: {bias_warning}. Try a different theme."
+                    )
 
         # ------------------------------------------------------------------
         # STEP 7: Assign a guaranteed unique lesson ID
