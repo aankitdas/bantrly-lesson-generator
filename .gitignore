@@ -24,3 +24,6 @@ data/skills/*
 test_*.py
 
 deliverables/
+*.pptx
+*.xlsx
+*.pdf
