@@ -22,3 +22,5 @@ data/skills/*
 
 # Test files
 test_*.py
+
+deliverables/
