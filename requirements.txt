@@ -4,3 +4,4 @@ pydantic>=2.0
 python-dotenv
 matplotlib
 plotly
+jinja2<3.1.4
