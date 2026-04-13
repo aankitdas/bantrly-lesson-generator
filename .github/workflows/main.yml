@@ -11,6 +11,10 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      - name: Remove deliverables folder
+        run: |
+          git rm -r --cached deliverables/ --ignore-unmatch
+          git commit -m "exclude deliverables from HF push" --allow-empty
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.BANTRLY }}
