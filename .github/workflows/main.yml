@@ -11,10 +11,14 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      - name: Remove deliverables folder
+      - name: Configure git identity
         run: |
-          git rm -r --cached deliverables/ --ignore-unmatch
-          git commit -m "exclude deliverables from HF push" --allow-empty
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+      - name: Remove pptx files
+        run: |
+          git rm -r --cached deliverables/*.pptx --ignore-unmatch
+          git commit -m "exclude pptx from HF push" --allow-empty
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.BANTRLY }}
